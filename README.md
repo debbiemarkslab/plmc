@@ -1,5 +1,5 @@
 # plmc
-plmc infers discrete, undirected graphical models using a penalized, maximum pseudolikelihood approach. It can summarize coevolution between residues in biological sequence families (couplingsfile output) or infer the parameters for generative models of sequence families that predict the effects of mutations (paramfile output).
+plmc infers pairwise undirected graphical models for families of biological sequences. It implements a penalized, maximum-pseudolikelihood approach and supports custom alphabets as well as various forms of regularization. With a multiple sequence alignment as an input, plmc can quantify inferred coupling strengths between all pairs of positions (couplingsfile output) or infer a generative model of the sequences for predicting the effects of mutations (paramfile output).
 
 ## Usage
       plmc [options] alignmentfile
@@ -21,6 +21,7 @@ plmc infers discrete, undirected graphical models using a penalized, maximum pse
     Options, Maximum a posteriori estimation (L-BFGS, default):
       -lh --lambdah    <value>         Set L2 lambda for fields (h_i)
       -le --lambdae    <value>         Set L2 lambda for couplings (e_ij)
+      -lg --lambdag    <value>         Set group L1 lambda for couplings (e_ij)
 
     Options, general:
       -a  --alphabet   alphabet        Alternative character set to use for analysis
@@ -31,7 +32,7 @@ plmc infers discrete, undirected graphical models using a penalized, maximum pse
       -h  --help                       Usage
 
 ## Compilation
-plm requires no external libraries to compile, but can optionally be accelerated by OpenMP. This repository includes a [C implementation of L-BFGS by Naoaki Okazaki](https://github.com/chokkan/liblbfgs "libLBFGS"). To compile for multicore on OS X, it is necessary to use a GCC instead of clang. Precomplied binaries can be found [here](http://hpc.sourceforge.net/).
+plm can be compiled to single-core without external libraries, but requires OpenMP for multi-core compilation. On Mac OS X, `clang` does not yet support OpenMP, but versions of `GCC` that do can be found as precompiled binaries [here](http://hpc.sourceforge.net/) or downloaded through package managers like homebrew or macports.
 
 **Multicore**. To compile with `gcc` and OpenMP: 
 
@@ -45,16 +46,30 @@ plm requires no external libraries to compile, but can optionally be accelerated
 
     make all-mac
 
-**Single precision**. All of the above targets compile to double precision (64 bit), but reducing the precision to single (32 bit) increases speed and decreases memory requirements by approximately a factor of two. The fastest compile settings are:
+**Single precision**. All of the above targets compile to double precision (64 bit), but reducing the precision to single (32 bit) increases speed and decreases memory requirements by approximately a factor of two. The fastest compile settings are then:
 
     make all-openmp32
 
 ## Examples
-**Standard protein alignment**. The following infers a model of the protein dihdyrofolate reductase (DHFR) with regularization parameters λ<sub>e</sub> = 1.0, λ<sub>h</sub> = 1.0 and the maximum number of iterations at 100:
+**Standard protein alignment**. The example directory includes an alignment of the protein [dihdyrofolate reductase](https://en.wikipedia.org/wiki/Dihydrofolate_reductase) (DHFR). To infer a model for this family, we can type the following in the base directory:
 
     bin/plmc -o example/DHFR/DHFR.eij -f DYR_ECOLI -le 16.0 -lh 0.01 -m 100 example/DHFR/DHFR.a2m
+The numeric options set a strong L2 regularization for the couplings at λ<sub>e</sub> at 16.0, a weak L2 regularization for the sites at λ<sub>h</sub> = 0.01, and the maximum number of iterations at 100. The focus `-f` option tells plmc to only model columns that are present in the E. coli sequence DYR_ECOLI, and the  `-g` gap-ignoring option ignores gaps by modeling only the coding portions of each sequence. To read the binary paramfile `DHFR.eij' and visualize the couplings, we can type the following in MATLAB from the scripts directory:
+
+    plot_coupling_components('../example/DHFR/DHFR.eij')
+
+The third subpanel in this figure is the APC-corrected coupling strength, which reveals the strongly-covarying positions in the long-term evolution of DHFR:
+<img src="example/DHFR/DHFR.png" width="800">
 
 **Reduced alphabet**. Although the default alphabet is "-ACDEFGHIKLMNPQRSTVWY", reduced systems can be encoded with arbitrary alphabets. As an example, simulated draws from a 3-state, 1-dimensional Potts model are provided in the examples folder and encoded by the characters _, *, and ^. The following command would estimate the parameters by running to convergence with λ<sub>e</sub> = 1.0, λ<sub>h</sub> = 1.0 and sequence reweighting disabled:
 
     bin/plmc -c example/potts/potts3.txt -a _*^ -t -1 -le 1.0 -lh 1.0 example/potts/potts3.a2m
 A 1D Potts model will only have interactions between i -> i + 1, which should be evident in the coupling summary scores output to example/potts/potts3.txt 
+
+## Author
+plmc was written by [John Ingraham](john.ingraham@gmail.com) in (Debora Marks' lab)[https://marks.hms.harvard.edu/] at Harvard Medical School
+
+## Credits
+This repository was made possible by a [C implementation of L-BFGS by Naoaki Okazaki](https://github.com/chokkan/liblbfgs "libLBFGS").
+
+

@@ -1,6 +1,6 @@
 /*
  *  plmc
- *  Copyright 2016, John Ingraham
+ *  Copyright (c) 2016, John Ingraham
  *  john.ingraham@gmail.com
  */
 
@@ -44,6 +44,7 @@ const char *usage =
 "    Options, Maximum a posteriori estimation (L-BFGS, default):\n"
 "      -lh --lambdah    <value>         Set L2 lambda for fields (h_i)\n"
 "      -le --lambdae    <value>         Set L2 lambda for couplings (e_ij)\n"
+"      -lg --lambdag    <value>         Set group L1 lambda for couplings (e_ij)\n"
 "\n"
 "    Options, general:\n"
 "      -a  --alphabet   alphabet        Alternative character set to use for analysis\n"
