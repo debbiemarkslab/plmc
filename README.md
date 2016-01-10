@@ -32,7 +32,7 @@ plmc infers pairwise undirected graphical models for families of biological sequ
       -h  --help                       Usage
 
 ## Compilation
-plm can be compiled to single-core without external libraries, but requires OpenMP for multi-core compilation. On Mac OS X, `clang` does not yet support OpenMP, but versions of `GCC` that do can be found as precompiled binaries [here](http://hpc.sourceforge.net/) or downloaded through package managers like homebrew or macports.
+plmc can be compiled to single-core without external libraries, but requires OpenMP for multi-core compilation. On Mac OS X, `clang` does not yet support OpenMP, but versions of `GCC` that do can be found as precompiled binaries [here](http://hpc.sourceforge.net/) or downloaded through package managers like homebrew or macports.
 
 **Multicore**. To compile with `gcc` and OpenMP: 
 
@@ -61,7 +61,7 @@ The numeric options set a strong L2 regularization for the couplings, λ<sub>e</
 The third subpanel in this figure is the APC-corrected coupling strength, which reveals the strongly-covarying positions in the long-term evolution of DHFR:
 <img src="example/DHFR/DHFR.png" width="800">
 
-**Reduced alphabet**. Although the default alphabet is "-ACDEFGHIKLMNPQRSTVWY", reduced systems can be encoded with arbitrary alphabets. As an example, simulated draws from a 3-state, 1-dimensional Potts model are provided in the examples folder and encoded by the characters _, *, and ^. The following command would estimate the parameters by running to convergence with λ<sub>e</sub> = 1.0, λ<sub>h</sub> = 1.0 and sequence reweighting disabled:
+**Reduced alphabet**. The default alphabet is for proteins ("-ACDEFGHIKLMNPQRSTVWY"), but custom alphabets of different sizes can be passed as an option to plmc. As an example, simulated draws from a 3-state, 1-dimensional Potts model are provided in the examples folder and encoded by the characters _, *, and ^. The following command would estimate the parameters by running to convergence with λ<sub>e</sub> = 1.0, λ<sub>h</sub> = 1.0 and sequence reweighting disabled:
 
     bin/plmc -c example/potts/potts3.txt -a _*^ -t -1 -le 1.0 -lh 1.0 example/potts/potts3.a2m
 A 1D Potts model will only have interactions between i -> i + 1, which should be evident in the coupling summary scores output to example/potts/potts3.txt 
@@ -70,6 +70,6 @@ A 1D Potts model will only have interactions between i -> i + 1, which should be
 plmc was written by [John Ingraham](mailto:john.ingraham@gmail.com) in [Debora Marks' lab](https://marks.hms.harvard.edu/) at Harvard Medical School
 
 ## Credits
-The MAP-based inference uses a [C implementation of L-BFGS by Naoaki Okazaki](https://github.com/chokkan/liblbfgs "libLBFGS"), which is included in this repository.
+The MAP-based inference uses a [C implementation of L-BFGS by Naoaki Okazaki](https://github.com/chokkan/liblbfgs "libLBFGS"), which is included in this repo
 
 
