@@ -53,8 +53,8 @@ plm can be compiled to single-core without external libraries, but requires Open
 ## Examples
 **Standard protein alignment**. The example directory includes an alignment of the protein [dihdyrofolate reductase](https://en.wikipedia.org/wiki/Dihydrofolate_reductase) (DHFR). To infer a model for this family, we can type the following in the base directory:
 
-    bin/plmc -o example/DHFR/DHFR.eij -f DYR_ECOLI -le 16.0 -lh 0.01 -m 100 example/DHFR/DHFR.a2m
-The numeric options set a strong L2 regularization for the couplings at λ<sub>e</sub> at 16.0, a weak L2 regularization for the sites at λ<sub>h</sub> = 0.01, and the maximum number of iterations at 100. The focus `-f` option tells plmc to only model columns that are present in the E. coli sequence DYR_ECOLI, and the  `-g` gap-ignoring option ignores gaps by modeling only the coding portions of each sequence. To read the binary paramfile `DHFR.eij' and visualize the couplings, we can type the following in MATLAB from the scripts directory:
+    bin/plmc -o example/DHFR/DHFR.eij -le 16.0 -lh 0.01 -m 100 -g -f DYR_ECOLI example/DHFR/DHFR.a2m
+The numeric options set a strong L2 regularization for the couplings, λ<sub>e</sub> = 16.0, a weak L2 regularization for the sites, λ<sub>h</sub> = 0.01, and the maximum number of iterations at 100. The focus `-f` option tells plmc to only model columns that are present in the E. coli sequence DYR_ECOLI, and the  `-g` gap-ignoring option ignores gaps by modeling only the coding portions of each sequence. To read the binary paramfile `DHFR.eij` and visualize the couplings, we can type the following in MATLAB from the `scripts` directory:
 
     plot_coupling_components('../example/DHFR/DHFR.eij')
 
@@ -67,9 +67,9 @@ The third subpanel in this figure is the APC-corrected coupling strength, which 
 A 1D Potts model will only have interactions between i -> i + 1, which should be evident in the coupling summary scores output to example/potts/potts3.txt 
 
 ## Author
-plmc was written by [John Ingraham](john.ingraham@gmail.com) in (Debora Marks' lab)[https://marks.hms.harvard.edu/] at Harvard Medical School
+plmc was written by [John Ingraham](john.ingraham@gmail.com) in [Debora Marks' lab](https://marks.hms.harvard.edu/) at Harvard Medical School
 
 ## Credits
-This repository was made possible by a [C implementation of L-BFGS by Naoaki Okazaki](https://github.com/chokkan/liblbfgs "libLBFGS").
+The MAP-based inference uses a [C implementation of L-BFGS by Naoaki Okazaki](https://github.com/chokkan/liblbfgs "libLBFGS"), which is included in this repository.
 
 
