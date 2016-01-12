@@ -1,0 +1,4 @@
+**/*.eij
+**/*.txt
+pfam/*
+test/*

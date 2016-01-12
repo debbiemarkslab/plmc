@@ -91,7 +91,6 @@ typedef struct {
     int nParams;
     numeric_t negLogLk;
     struct timeval start;
-    letter_t *samples;
 } alignment_t;
 
 /* Loads a multiple sequence alignment and encodes it into a specified alphabet.
@@ -107,6 +106,9 @@ void MSAReweightSequences(alignment_t *ali, numeric_t theta, numeric_t scale);
 
 /* Counts empirical sitewise(fi) and pairwise(fij) marginals of the alignment */
 void MSACountMarginals(alignment_t *ali, options_t *options);
+
+/* Frees alignment and options */
+void MSAFree(alignment_t *ali, options_t *options);
 
 /* Parameter output */
 void OutputParametersSite(char *outputFile, const numeric_t *x,

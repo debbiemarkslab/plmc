@@ -194,11 +194,14 @@ int main(int argc, char **argv) {
     /* Infer model parameters */
     numeric_t *x = InferPairModel(ali, options);
 
-    /* Output estimated model parameters and (optionally) coupling scores */
+    /* (Optionally) Output estimated parameters and coupling scores */
     if (outputFile != NULL)
         OutputParametersFull(outputFile, x, ali);
     if (couplingsFile != NULL)
         OutputCouplingScores(couplingsFile, x, ali, options);
+
+    /* Free alignment and options */
+    MSAFree(ali, options);
 }
 
 alignment_t *MSARead(char *alignFile, options_t *options) {
@@ -636,6 +639,20 @@ void MSACountMarginals(alignment_t *ali, options_t *options) {
                 for (int j = i + 1; j < ali->nSites; j++)
                     fij(i, j, seq(s, i), seq(s, j)) += ali->weights[s] * Zinv;
     }
+}
+
+void MSAFree(alignment_t *ali, options_t *options) {
+    /* Free alignment and options */
+    if (ali->names && ali->names[0])
+        for (int i = 0; i < ali->nSeqs; i++) free(ali->names[i]);
+    free(ali->names);
+    free(ali->sequences);
+    free(ali->weights);
+    free(ali->fi);
+    free(ali->fij);
+
+    /* Note: options->target and options->alphabet are never allocated */
+    free(options);
 }
 
 #define OUTPUT_PRECISION float
