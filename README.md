@@ -56,9 +56,9 @@ plmc can be compiled to single-core without external libraries, but requires Ope
     bin/plmc -o example/DHFR/DHFR.eij -le 16.0 -lh 0.01 -m 100 -g -f DYR_ECOLI example/DHFR/DHFR.a2m
 The numeric options set a strong L2 regularization for the couplings, λ<sub>e</sub> = 16.0, a weak L2 regularization for the sites, λ<sub>h</sub> = 0.01, and the maximum number of iterations at 100. The focus `-f` option tells plmc to only model columns that are present in the E. coli sequence DYR_ECOLI, and the  `-g` gap-ignoring option ignores gaps by modeling only the coding portions of each sequence. To read the binary paramfile `DHFR.eij` and visualize the couplings, we can type the following in MATLAB from the `scripts` directory:
 
-    plot_coupling_components('../example/DHFR/DHFR.eij')
+    plot_corrected_couplings('../example/DHFR/DHFR.eij')
 
-The third subpanel in this figure is the APC-corrected coupling strength, which reveals the strongly-covarying positions in the long-term evolution of DHFR:
+This computes and plots the same (APC-corrected) coupling strengths that would be output to couplingfile, revealing many strongly coupled pairs of positions in the long-term evolution of DHFR:
 <img src="example/DHFR/DHFR.png" width="800">
 
 **Reduced alphabet**. The default alphabet is for proteins ("-ACDEFGHIKLMNPQRSTVWY"), but custom alphabets of different sizes can be passed as an option to plmc. As an example, simulated draws from a 3-state, 1-dimensional Potts model are provided in the examples folder and encoded by the characters _, *, and ^. The following command would estimate the parameters by running to convergence with λ<sub>e</sub> = 1.0, λ<sub>h</sub> = 1.0 and sequence reweighting disabled:

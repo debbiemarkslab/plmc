@@ -39,34 +39,13 @@ CR = U * sr * V';
 cmag = max(abs([FN(:); C1(:); CR(:)]));
 clim = [-cmag cmag];
 
-R2C1 = corr(FN(:),C1(:))^2;
-R2CR = corr(FN(:),CR(:))^2;
-
 figure;
-subplot(1,3,1)
-imagesc(FN)
+imagesc(CR - diag(diag(CR)))
 axis square
 caxis(clim)
 colorbar('Location','SouthOutside');
-title('Coupling strength $||e_{ij}||_2$','Interpreter','LaTeX','FontSize',22);
-
-
-subplot(1,3,2)
-imagesc(C1)
-axis square
-caxis(clim)
-colorbar('Location','SouthOutside');
-title({'Component 1',...['$~~R^2 = ' num2str(R2C1,'%.2f') '$'],...
-       ['$\frac{\sigma_1^2}{\sum_i \sigma_i^2} = ' num2str(Sd(1).^2 / sum(Sd.^2),'%.2f') ' $']}...
-    ,'Interpreter','LaTeX','FontSize',22);
-
-
-subplot(1,3,3)
-imagesc(CR)
-axis square
-caxis(clim)
-colorbar('Location','SouthOutside');
-title(['Components 2-' num2str(numel(Sd))],'Interpreter','LaTeX','FontSize',22);
+title('Corrected coupling strengths $||e_{ij}||_2 - \frac{\langle ||e_{ij}||_2 \rangle_{i} \langle ||e_{ij}||_2 \rangle_{j}}{\langle ||e_{ij}||_2 \rangle_{ij}}$',...
+      'Interpreter','LaTeX','FontSize',24);
 
 Cbase = [26/255 80/255 155/255;       ....
          1 1 1;         ...
