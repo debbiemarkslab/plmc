@@ -24,9 +24,9 @@ plmc infers pairwise undirected graphical models for families of biological sequ
       -lg --lambdag    <value>         Set group L1 lambda for couplings (e_ij)
 
     Options, general:
-      -a  --alphabet   alphabet        Alternative character set to use for analysis
+      -a  --alphabet   alphabet        Alternative alphabet (default 21: -ACDEFGHIKLMNPQRSTVWY)
       -f  --focus      identifier      Select only uppercase, non-gapped sites from a focus sequence
-      -g  --gapignore                  Model sequence likelihoods only by coding, non-gapped portions
+      -g  --gapignore                  Exclude first alphabet character from potential calculations
       -m  --maxiter                    Maximum number of iterations
       -n  --ncores    [<number>|max]   Maximum number of threads to use in OpenMP
       -h  --help                       Usage
