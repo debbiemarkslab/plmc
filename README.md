@@ -61,14 +61,14 @@ The numeric options set a strong L2 regularization for the couplings, λ<sub>e</
 This computes and plots the same (APC-corrected) coupling strengths that would be output to couplingfile, revealing many strongly coupled pairs of positions in the long-term evolution of DHFR:
 <p align="center"><img src="example/DHFR/DHFR.png" width="400"></p>
 
-**RNA alignments**. To override the default alphabet ("-ACDEFGHIKLMNPQRSTVWY" for proteins) use the option `-a ALPHABET`. An example RNA alignment included for the [SAM riboswitch](https://en.wikipedia.org/wiki/SAM_riboswitch_(S_box_leader)). To infer the couplings with an RNA alphabet (".ACGU") type the following in the base directory:
+**RNA alignments**. To override the default alphabet ("-ACDEFGHIKLMNPQRSTVWY" for proteins) use the option `-a ALPHABET`. An example RNA alignment is included for the [SAM riboswitch](https://en.wikipedia.org/wiki/SAM_riboswitch_(S_box_leader)). To infer the couplings with an RNA alphabet (".ACGU") type the following in the base directory:
 
     bin/plmc -c example/RNA/RF00162.EC -o example/RNA/RF00162.eij -a .ACGU -le 20.0 -lh 0.01 -m 50 -g example/RNA/RF00162.fasta
 
 To plot we type the following in MATLAB from the `scripts` directory:
 
     plot_corrected_couplings('../example/RNA/RF00162.eij')
-<img src="example/RNA/RF00162.png" width="500">
+<p align="center"><img src="example/RNA/RF00162.png" width="500"></p>
 
 **Physical systems**. As an example, simulated draws from a 3-state, 1-dimensional Potts model are provided in the examples folder and encoded by the characters _, *, and ^. The following command would estimate the parameters by running to convergence with λ<sub>e</sub> = 1.0, λ<sub>h</sub> = 1.0 and sequence reweighting disabled:
 
