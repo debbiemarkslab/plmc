@@ -63,7 +63,7 @@ This computes and plots the same (APC-corrected) coupling strengths that would b
 
 **RNA alignments**. To override the default alphabet ("-ACDEFGHIKLMNPQRSTVWY" for proteins) use the option `-a ALPHABET`. An example RNA alignment is included for the [SAM riboswitch](https://en.wikipedia.org/wiki/SAM_riboswitch_(S_box_leader)). To infer the couplings with an RNA alphabet (".ACGU") type the following in the base directory:
 
-    bin/plmc -c example/RNA/RF00162.EC -o example/RNA/RF00162.eij -a .ACGU -le 20.0 -lh 0.01 -m 50 -g example/RNA/RF00162.fasta
+    bin/plmc -c example/RNA/RF00162.EC -o example/RNA/RF00162.eij -a .ACGU -le 20.0 -lh 0.01 -m 50 example/RNA/RF00162.fasta
 
 To plot we type the following in MATLAB from the `scripts` directory:
 
