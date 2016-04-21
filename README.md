@@ -82,6 +82,16 @@ To plot we type the following in MATLAB from the `scripts` directory:
 A 1D Potts model will only have interactions between i -> i + 1, which should be evident in the coupling summary scores output to example/potts/potts3.txt 
 
 ## References
+The use of pseudolikelihood approximations for approximate inference of spin models for sequence families was established in the compsci/bioinformatics literature by
+
+Balakrishnan, S., Kamisetty, H., Carbonell, J. G., Lee, S. I., & Langmead, C. J. (2011). [Learning generative models for protein fold families](http://onlinelibrary.wiley.com/doi/10.1002/prot.22934/abstract). Proteins: Structure, Function, and Bioinformatics, 79(4), 1061-1078.
+
+and in the biophysics literature by
+
+Ekeberg, M., Lövkvist, C., Lan, Y., Weigt, M., & Aurell, E. (2013). [Improved contact prediction in proteins: using pseudolikelihoods to infer Potts models](http://journals.aps.org/pre/abstract/10.1103/PhysRevE.87.012707). Physical Review E, 87(1), 012707.
+
+`plmc` implements a joint optimization version of inference described in these and subsequent works (i.e. the 'symmetric' pseudolikelihood). If you'd like to use `plmc` in your own work, please cite one of the following papers that uses `plmc`. Also, please let us know if you have any comments or questions!
+
 Hopf, T. A., Ingraham, J. B., Poelwijk, F. J., Springer, M., Sander, C., & Marks, D. S. (2015). [Quantification of the effect of mutations using a global probability model of natural sequence variation](http://arxiv.org/abs/1510.04612). arXiv:1510.04612.
 
 Weinreb, C., Riesselman, A. J., Ingraham, J. B., Gross, T., Sander, C., & Marks, D. S. (2016). [3D RNA and Functional Interactions from Evolutionary Couplings](http://www.sciencedirect.com/science/article/pii/S0092867416303282). Cell.
