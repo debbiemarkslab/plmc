@@ -50,6 +50,12 @@ plmc can be compiled to single-core without external libraries, but requires Ope
 
     make all-openmp32
 
+## Output
+
+**Coupling scores**. The `couplingsfile` is a flat text file containing scores quantifying the inferred strength of the coupling between every pair of positions. It has 6 columns: `RES_I FOCUS_AI RES_J FOCUS_AJ 0 SCORE`, where `SCORE` is the coupling score between positions `RES_I` and `RES_J`, `FOCUS_AI` and `FOCUS_AJ` are the letters in the focus sequence (optional, `-` if no focus), `0` is a placeholder. The `SCORE` values are APC-corrected Frobenius norm scores, but alternative scores can be computed from the raw parameter values.
+
+**Parameter estimates**. The model includes sequence-specific parameters for all possible pairs of amino acids at all possible pairs of postions, which is about 10<sup>6</sup>-10<sup>8</sup> parameters for protein families of lengths ~70-700. If a `paramfile` is specified with `-o`, `plmc` will store all inferred parameter values in binary. The MATLAB script `scripts/read_eij.m` can load this binary file format into computable data structures.
+
 ## Examples
 **Protein alignments**. The example directory includes an alignment of the protein [dihdyrofolate reductase](https://en.wikipedia.org/wiki/Dihydrofolate_reductase) (DHFR). To infer a model for this family, we can type the following in the base directory:
 
@@ -74,6 +80,11 @@ To plot we type the following in MATLAB from the `scripts` directory:
 
     bin/plmc -c example/potts/potts3.txt -a _*^ -t -1 -le 1.0 -lh 1.0 example/potts/potts3.a2m
 A 1D Potts model will only have interactions between i -> i + 1, which should be evident in the coupling summary scores output to example/potts/potts3.txt 
+
+## References
+Hopf, T. A., Ingraham, J. B., Poelwijk, F. J., Springer, M., Sander, C., & Marks, D. S. (2015). [Quantification of the effect of mutations using a global probability model of natural sequence variation](http://arxiv.org/abs/1510.04612). arXiv:1510.04612.
+
+Weinreb, C., Riesselman, A. J., Ingraham, J. B., Gross, T., Sander, C., & Marks, D. S. (2016). [3D RNA and Functional Interactions from Evolutionary Couplings](http://www.sciencedirect.com/science/article/pii/S0092867416303282). Cell.
 
 ## Author
 plmc was written by [John Ingraham](mailto:john.ingraham@gmail.com) in [Debora Marks' lab](https://marks.hms.harvard.edu/) at Harvard Medical School
