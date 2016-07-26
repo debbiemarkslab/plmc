@@ -66,7 +66,7 @@ The numeric options set a strong L2 regularization for the couplings, λ<sub>e</
     plot_coupling_scores(params)
 
 This computes and plots the same (APC-corrected) coupling strengths that would be output to couplingfile, revealing many strongly coupled pairs of positions in the long-term evolution of DHFR:
-<p align="center"><img src="example/protein/DHFR.png" width="400"></p>
+<p align="center"><img src="example/protein/DHFR.png" width="500"></p>
 
 **RNA alignments**. To override the default alphabet ("-ACDEFGHIKLMNPQRSTVWY" for proteins) use the option `-a ALPHABET`. An example RNA alignment is included for the [SAM riboswitch](https://en.wikipedia.org/wiki/SAM_riboswitch_(S_box_leader)). To infer the couplings with an RNA alphabet (".ACGU") type the following in the base directory:
 
