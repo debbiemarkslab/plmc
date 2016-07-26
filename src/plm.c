@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <sys/time.h>
 #include <assert.h>
 #include <string.h>
@@ -196,7 +197,7 @@ int main(int argc, char **argv) {
 
     /* (Optionally) Output estimated parameters and coupling scores */
     if (outputFile != NULL)
-        OutputParametersFull(outputFile, x, ali);
+        OutputParametersFull(outputFile, x, ali, options);
     if (couplingsFile != NULL)
         OutputCouplingScores(couplingsFile, x, ali, options);
 
@@ -333,6 +334,12 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
     for (int s = 0; s < ali->nSeqs; s++)
         if (seqValid[s] == ali->nSites) nValidSeqs++;
     fprintf(stderr, "%d valid sequences out of %d \n", nValidSeqs, ali->nSeqs);
+    
+    /* Recored indices of skipped sequences */
+    ali->nSkippedSeqs = ali->nSeqs - nValidSeqs;
+    ali->skippedSeqs = (int *) malloc(ali->nSkippedSeqs * sizeof(int));
+    for (int s = 0, skipIndex = 0; s < ali->nSeqs; s++)
+        if (seqValid[s] != ali->nSites) ali->skippedSeqs[skipIndex++] = s;
 
     /* Focus mode: select only focus columns (criteria below) */
     int nValidSites = ali->nSites;
@@ -712,65 +719,117 @@ void OutputParametersSite(char *outputFile, const numeric_t *x,
 }
 
 void OutputParametersFull(char *outputFile, const numeric_t *x,
-    alignment_t *ali) {
+    alignment_t *ali, options_t *options) {
+/* File format */
     FILE *fpOutput = NULL;
     fpOutput = fopen(outputFile, "w");
     if (fpOutput != NULL) {
         /* 1: nSites */
-        fwrite(&(ali->nSites), sizeof(ali->nSites), 1, fpOutput);
+        int32_t nSites = (int32_t) ali->nSites;
+        fwrite(&nSites, sizeof(nSites), 1, fpOutput);
 
         /* 2: nCodes */
-        fwrite(&(ali->nCodes), sizeof(ali->nCodes), 1, fpOutput);
+        int32_t nCodes = (int32_t) ali->nCodes;
+        fwrite(&nCodes, sizeof(nCodes), 1, fpOutput);
 
-        /* 3: (Focus mode) target sequence */
+        /* 3: nSeqs */
+        int32_t nSeqs = (int32_t) ali->nSeqs;
+        fwrite(&nSeqs, sizeof(nSeqs), 1, fpOutput);
+
+        /* 4: nSkippedSeqs */
+        int32_t nSkippedSeqs = (int32_t) ali->nSkippedSeqs;
+        fwrite(&nSkippedSeqs, sizeof(nSkippedSeqs), 1, fpOutput);
+
+        /* 5: number of iterations */
+        int32_t maxIter = (int32_t) options->maxIter;
+        fwrite(&maxIter, sizeof(maxIter), 1, fpOutput);
+
+        /* 6: theta */
+        OUTPUT_PRECISION theta = (OUTPUT_PRECISION) options->theta;
+        fwrite(&theta, sizeof(theta), 1, fpOutput);
+
+        /* 7: lambda for fields (lh) */
+        OUTPUT_PRECISION lh = (OUTPUT_PRECISION) options->lambdaH;
+        fwrite(&lh, sizeof(lh), 1, fpOutput);
+
+        /* 8: lambda for couplings (le) */
+        OUTPUT_PRECISION le = (OUTPUT_PRECISION) options->lambdaE;
+        fwrite(&le, sizeof(le), 1, fpOutput);
+
+        /* 9: group lambda for couplings (lg) */
+        OUTPUT_PRECISION lg = (OUTPUT_PRECISION) options->lambdaGroup;
+        fwrite(&lg, sizeof(lg), 1, fpOutput);
+
+        /* 10: effective sample size (nEff) */
+        OUTPUT_PRECISION nEff = (OUTPUT_PRECISION) ali->nEff;
+        fwrite(&nEff, sizeof(nEff), 1, fpOutput);
+
+        /* 11: alphabet */
+        int isGapped = (options->estimatorMAP == INFER_MAP_PLM_GAPREDUCE);
+        for (int i = 0; i < ali->nCodes; i++) {
+            int8_t letter = (int8_t) ali->alphabet[i + isGapped];
+            fwrite(&letter, sizeof(letter), 1, fpOutput);
+        }
+
+        /* 12: sequence number of neighbors (self included) */
+        int skipix = 0, reducedix = 0;
+        for (int s = 0; s < ali->nSeqs + ali->nSkippedSeqs; s++) {
+            if (skipix < ali->nSkippedSeqs && s == ali->skippedSeqs[skipix]) {
+                /* Skip skipped sequences */
+                OUTPUT_PRECISION w = (OUTPUT_PRECISION) 0;
+                fwrite(&w, sizeof(w), 1, fpOutput);
+                skipix++;
+            } else {
+                numeric_t nNeighbors = ali->weights[reducedix];
+                nNeighbors = 1.0 / (nNeighbors * options->scale);
+                OUTPUT_PRECISION w = (OUTPUT_PRECISION) nNeighbors;
+                fwrite(&w, sizeof(w), 1, fpOutput);
+                reducedix++;
+            }
+        }
+
+        /* 13: (Focus mode) target sequence */
         if (ali->target >= 0) {
             for (int i = 0; i < ali->nSites; i++) {
-                char c = (char) ali->alphabet[seq(ali->target, i)];
-                fwrite(&c, sizeof(char), 1, fpOutput);
+                int8_t c = (int8_t) ali->alphabet[seq(ali->target, i)];
+                fwrite(&c, sizeof(c), 1, fpOutput);
             }
         } else {
-            char c = ali->alphabet[0];
+            int8_t c = (int8_t) ali->alphabet[0];
             for (int i = 0; i < ali->nSites; i++)
                 fwrite(&c, sizeof(c), 1, fpOutput);
         }
 
-        /* 4: (Focus mode) offset map */
+        /* 14: (Focus mode) offset map */
         if (ali->target >= 0) {
             for (int i = 0; i < ali->nSites; i++) {
-                int ix = ali->offsets[i];
+                int32_t ix = (int32_t) ali->offsets[i];
                 fwrite(&ix, sizeof(ix), 1, fpOutput);
             }
         } else {
             for (int i = 0; i < ali->nSites; i++) {
-                int ix = i + 1;
+                int32_t ix = (int32_t) i + 1;
                 fwrite(&ix, sizeof(ix), 1, fpOutput);
             }
         }
 
-        /* 5: sitewise marginals fi */
+        /* 15: sitewise marginals fi */
         for (int i = 0; i < ali->nSites; i++)
             for (int ai = 0; ai < ali->nCodes; ai++) {
                 OUTPUT_PRECISION f = (OUTPUT_PRECISION) fi(i, ai);
                 fwrite(&f, sizeof(f), 1, fpOutput);
             }
 
-        /* 6: sitewise parameters hi */
+        /* 16: sitewise parameters hi */
         for (int i = 0; i < ali->nSites; i++)
             for (int ai = 0; ai < ali->nCodes; ai++) {
                 OUTPUT_PRECISION h = (OUTPUT_PRECISION) xHi(i, ai);
                 fwrite(&h, sizeof(h), 1, fpOutput);
             }
 
-        /* 7: coupling marginals & parameters fij, hi~, hj~, eij */
+        /* 17: pairwise marginals fij */
         for (int i = 0; i < ali->nSites - 1; i++)
-            for (int j = i + 1; j < ali->nSites; j++) {
-                /* 7a: i, j dimensions */
-                int ix = i + 1;
-                int jx = j + 1;
-                fwrite(&ix, sizeof(ix), 1, fpOutput);
-                fwrite(&jx, sizeof(jx), 1, fpOutput);
-
-                /* 7a: fij */
+            for (int j = i + 1; j < ali->nSites; j++)
                 for (int ai = 0; ai < ali->nCodes; ai++)
                     for (int aj = 0; aj < ali->nCodes; aj++) {
                         OUTPUT_PRECISION f =
@@ -778,15 +837,15 @@ void OutputParametersFull(char *outputFile, const numeric_t *x,
                         fwrite(&f, sizeof(f), 1, fpOutput);
                     }
 
-                /* 7e: eij */
+        /* 18: couplings eij */
+        for (int i = 0; i < ali->nSites - 1; i++)
+            for (int j = i + 1; j < ali->nSites; j++)
                 for (int ai = 0; ai < ali->nCodes; ai++)
                     for (int aj = 0; aj < ali->nCodes; aj++) {
                         OUTPUT_PRECISION e =
                             (OUTPUT_PRECISION) xEij(i, j, ai, aj);
                         fwrite(&e, sizeof(e), 1, fpOutput);
                     }
-            }
-
         fclose(fpOutput);
     } else {
         fprintf(stderr, "Error writing parameters\n");

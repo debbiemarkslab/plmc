@@ -1,5 +1,6 @@
 **/*.EC
 **/*.eij
+**/*.params
 **/*.txt
 pfam/*
 test/*

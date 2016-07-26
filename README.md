@@ -59,21 +59,23 @@ plmc can be compiled to single-core without external libraries, but requires Ope
 ## Examples
 **Protein alignments**. The example directory includes an alignment of the protein [dihdyrofolate reductase](https://en.wikipedia.org/wiki/Dihydrofolate_reductase) (DHFR). To infer a model for this family, we can type the following in the base directory:
 
-    bin/plmc -o example/DHFR/DHFR.eij -le 16.0 -lh 0.01 -m 100 -g -f DYR_ECOLI example/DHFR/DHFR.a2m
+    bin/plmc -o example/protein/DHFR.params -le 16.0 -lh 0.01 -m 100 -g -f DYR_ECOLI example/protein/DHFR.a2m
 The numeric options set a strong L2 regularization for the couplings, λ<sub>e</sub> = 16.0, a weak L2 regularization for the sites, λ<sub>h</sub> = 0.01, and the maximum number of iterations at 100. The focus `-f` option tells plmc to only model columns that are present in the E. coli sequence DYR_ECOLI, and the  `-g` gap-ignoring option ignores gaps by modeling only the coding portions of each sequence. To read the binary paramfile `DHFR.eij` and visualize the couplings, we can type the following in MATLAB from the `scripts` directory:
 
-    plot_corrected_couplings('../example/DHFR/DHFR.eij')
+    params = read_params('../example/protein/DHFR.params');
+    plot_coupling_scores(params)
 
 This computes and plots the same (APC-corrected) coupling strengths that would be output to couplingfile, revealing many strongly coupled pairs of positions in the long-term evolution of DHFR:
-<p align="center"><img src="example/DHFR/DHFR.png" width="400"></p>
+<p align="center"><img src="example/protein/DHFR.png" width="400"></p>
 
 **RNA alignments**. To override the default alphabet ("-ACDEFGHIKLMNPQRSTVWY" for proteins) use the option `-a ALPHABET`. An example RNA alignment is included for the [SAM riboswitch](https://en.wikipedia.org/wiki/SAM_riboswitch_(S_box_leader)). To infer the couplings with an RNA alphabet (".ACGU") type the following in the base directory:
 
-    bin/plmc -c example/RNA/RF00162.EC -o example/RNA/RF00162.eij -a .ACGU -le 20.0 -lh 0.01 -m 50 example/RNA/RF00162.fasta
+    bin/plmc -c example/RNA/RF00162.EC -o example/RNA/RF00162.params -a .ACGU -le 20.0 -lh 0.01 -m 50 example/RNA/RF00162.fasta
 
-To plot we type the following in MATLAB from the `scripts` directory:
+To plot the aggregated coupling scores type the following in MATLAB from the `scripts` directory:
 
-    plot_corrected_couplings('../example/RNA/RF00162.eij')
+    params = read_params('../example/RNA/RF00162.params');
+    plot_coupling_scores(params)
 <p align="center"><img src="example/RNA/RF00162.png" width="500"></p>
 
 **Physical systems**. As an example, simulated draws from a 3-state, 1-dimensional Potts model are provided in the examples folder and encoded by the characters _, *, and ^. The following command would estimate the parameters by running to convergence with λ<sub>e</sub> = 1.0, λ<sub>h</sub> = 1.0 and sequence reweighting disabled:
