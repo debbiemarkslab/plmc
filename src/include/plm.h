@@ -124,7 +124,11 @@ void OutputCouplingScores(char *couplingsFile, const numeric_t *x,
 #define fgetstr(str, fp)   {char *endPos;                              \
                             fgets(str, BUFFER_SIZE, fp);               \
                             if ((endPos = strchr(str, '\n')) != NULL)  \
-                            *endPos = '\0';}
+                            *endPos = '\0';                            \
+                            /* Trim trailing carriage returns */       \
+                            while (str[strlen(str) - 1] == '\r')       \
+                                str[strlen(str) - 1] = '\0';           \
+                            }
 
 /* Memory schemes for model parameters and gradients */
 #define xHi(i, Ai)             x[i + ali->nSites * (Ai)]

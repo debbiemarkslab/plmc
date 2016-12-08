@@ -233,8 +233,15 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
     /* Verify alignment dimensions and structure (first pass through file) */
     char name[BUFFER_SIZE];
     char seq[BUFFER_SIZE];
+    /* Read first line as name */
     fgetstr(name, fpAli);
-    if (*name == '>') MSAReadSeq(seq, fpAli);
+    if (*name == '>') {
+        MSAReadSeq(seq, fpAli);
+    } else {
+        fprintf(stderr, "Error reading alignment:"
+                        " First line should start with >\n");
+        exit(1);
+    }
     ali->nCodes = strlen(ali->alphabet);
     ali->nSites = strlen(seq);
     ali->nSeqs = 1;
@@ -246,7 +253,7 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
             MSAReadSeq(seq, fpAli);
         } else {
             fprintf(stderr, "Error reading alignment:"
-                            " sequences should start with >\n");
+                            " sequence records should start with >\n");
             exit(1);
         }
 
@@ -284,7 +291,7 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
     /* --------------------------------_DEBUG_--------------------------------*/
     /* Alignment to stderr */
     // for (int s = 0; s < 10; s++) {
-    // // for (int s = 0; s < ali->nSeqs; s++) {
+    // for (int s = 0; s < ali->nSeqs; s++) {
     //     for (int i = 0; i < ali->nSites; i++)
     //         if (seq(s, i) >= 0 && seq(s, i) < ali->nCodes) {
     //             fprintf(stderr, "%c", ali->alphabet[seq(s, i)]);
@@ -292,7 +299,7 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
     //             fprintf(stderr, "%c",
     //                 tolower(ali->alphabet[seq(s, i) + ali->nCodes]));
     //         } else {
-    //             fprintf(stderr, "_");
+    //             fprintf(stderr, "*%d*", seq(s, i));
     //         }
     //     fprintf(stderr, "\n");
     // }
@@ -473,12 +480,14 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
 void MSAReadSeq(char *seq, FILE *fpAli) {
     /* Read sequence from the current line(s) */
     char buf[BUFFER_SIZE];
-    char c = fgetc(fpAli);
+    /* Look ahead one character */
+    char c = fgetc(fpAli); 
     ungetc(c, fpAli);
     seq[0] = '\0';
     while (c != '>' && !feof(fpAli)) {
         fgetstr(buf, fpAli);
         strcat(seq, buf);
+        /* Look ahead one character */
         c = fgetc(fpAli);
         ungetc(c, fpAli);
     }
