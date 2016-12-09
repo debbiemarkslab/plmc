@@ -441,10 +441,9 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
     }
 
     /* Shift any lowercase codes back to uppercase */
-    if (ali->alphabet == codesAA)
-        for (int s = 0; s < ali->nSeqs; s++)
-            for (int i = 0; i < ali->nSites; i++)
-                if (seq(s, i) < 0) seq(s, i) += ali->nCodes;
+    for (int s = 0; s < ali->nSeqs; s++)
+        for (int i = 0; i < ali->nSites; i++)
+            if (seq(s, i) < 0) seq(s, i) += ali->nCodes;
 
     /* Intialize weights to 1.0 */
     ali->weights = (numeric_t *) malloc(ali->nSeqs * sizeof(numeric_t));
