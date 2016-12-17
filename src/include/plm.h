@@ -121,13 +121,14 @@ void OutputCouplingScores(char *couplingsFile, const numeric_t *x,
 
 /* File I/O */
 #define BUFFER_SIZE 4096
-#define fgetstr(str, fp)   {char *endPos;                              \
-                            fgets(str, BUFFER_SIZE, fp);               \
-                            if ((endPos = strchr(str, '\n')) != NULL)  \
-                            *endPos = '\0';                            \
-                            /* Trim trailing carriage returns */       \
-                            while (str[strlen(str) - 1] == '\r')       \
-                                str[strlen(str) - 1] = '\0';           \
+#define fgetstr(str, fp)   {char *endPos;                                   \
+                            if (fgets(str, BUFFER_SIZE, fp) != NULL) {      \
+                                if ((endPos = strchr(str, '\n')) != NULL)   \
+                                    *endPos = '\0';                         \
+                                /* Trim trailing carriage returns */        \
+                                while (str[strlen(str) - 1] == '\r')        \
+                                       str[strlen(str) - 1] = '\0';         \
+                                }                                           \
                             }
 
 /* Memory schemes for model parameters and gradients */
