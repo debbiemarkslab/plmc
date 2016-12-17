@@ -1,5 +1,5 @@
 # plmc
-plmc infers pairwise undirected graphical models for families of biological sequences. It implements a penalized, maximum-pseudolikelihood approach and supports custom alphabets as well as various forms of regularization. With a multiple sequence alignment as an input, plmc can quantify inferred coupling strengths between all pairs of positions (couplingsfile output) or infer a generative model of the sequences for predicting the effects of mutations (paramfile output).
+plmc infers [undirected graphical models](https://en.wikipedia.org/wiki/Markov_random_field) to describe coevolution and covariation in families of biological sequences. With a multiple sequence alignment as an input, plmc can quantify inferred coupling strengths between all pairs of positions (couplingsfile output) or infer a generative model of the sequences for predicting the effects of mutations or designing new sequences (paramfile output).
 
 ## Usage
       plmc [options] alignmentfile
@@ -32,11 +32,13 @@ plmc infers pairwise undirected graphical models for families of biological sequ
       -h  --help                       Usage
 
 ## Compilation
-plmc can be compiled to single-core without external libraries, but requires OpenMP for multi-core compilation. On Mac OS X, `clang` does not yet support OpenMP, but versions of `GCC` that do can be found as precompiled binaries [here](http://hpc.sourceforge.net/) or downloaded through package managers like homebrew or macports.
+plmc requires no external libraries, but can optionally be accelerated with OpenMP for multicore parallelism.
 
 **Multicore**. To compile with `gcc` and OpenMP: 
 
     make all-openmp
+
+On macOS, OpenMP requires that an external version of GCC be installed rather than `clang`. Precompiled binaries of GCC are available [here](http://hpc.sourceforge.net/) or can be downloaded through package managers like homebrew or macports.
 
 **Single core, Linux**. To compile with `gcc`: 
 
@@ -54,7 +56,7 @@ plmc can be compiled to single-core without external libraries, but requires Ope
 
 **Coupling scores**. The `couplingsfile` is a flat text file containing scores quantifying the inferred strength of the coupling between every pair of positions. It has 6 columns: `RES_I FOCUS_AI RES_J FOCUS_AJ 0 SCORE`, where `SCORE` is the coupling score between positions `RES_I` and `RES_J`, `FOCUS_AI` and `FOCUS_AJ` are the letters in the focus sequence (optional, `-` if no focus), `0` is a placeholder. The `SCORE` values are APC-corrected Frobenius norm scores, but alternative scores can be computed from the raw parameter values.
 
-**Parameter estimates**. The model includes sequence-specific parameters for all possible pairs of amino acids at all possible pairs of postions, which is about 10<sup>6</sup>-10<sup>8</sup> parameters for protein families of lengths ~70-700. If a `paramfile` is specified with `-o`, `plmc` will store all inferred parameter values in binary. The MATLAB script `scripts/read_eij.m` can load this binary file format into computable data structures.
+**Parameter estimates**. The optional `paramfile` specified with `-o`, will store all inferred model parameters in binary. These can get large, as for proteins the model explicitly parameterizes all possible pairs of amino acids at all possible pairs of postions, which is about 10<sup>6</sup>-10<sup>8</sup> numbers for families of lengths ~70-700.  The MATLAB script `scripts/read_params.m` unpacks this binary file into model parameters as well as associated metadata, such as inferred sequence weights.
 
 ## Examples
 **Protein alignments**. The example directory includes an alignment of the protein [dihdyrofolate reductase](https://en.wikipedia.org/wiki/Dihydrofolate_reductase) (DHFR). To infer a model for this family, we can type the following in the base directory:

@@ -9,6 +9,9 @@ CLANGFLAGS=-lm -Wall -Ofast -msse4.2
 all:
 	gcc $(SOURCES) -o bin/plmc $(GCCFLAGS)
 
+all32:
+	gcc $(SOURCES) -o bin/plmc $(GCCFLAGS) -D USE_FLOAT
+
 all-dev:
 	gcc $(SOURCES) -o bin/plmc $(GCCFLAGS) -Wall
 
