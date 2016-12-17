@@ -77,6 +77,10 @@ typedef struct {
     char **names;
     letter_t *sequences;
 
+    /* Sequence skipping */
+    int nSkippedSeqs;
+    int *skippedSeqs;
+
     /* Focus mode */
     int target;
     int *offsets;
@@ -114,7 +118,7 @@ void MSAFree(alignment_t *ali, options_t *options);
 void OutputParametersSite(char *outputFile, const numeric_t *x,
     alignment_t *ali);
 void OutputParametersFull(char *outputFile, const numeric_t *x,
-    alignment_t *ali);
+    alignment_t *ali, options_t *options);
 void OutputCouplingScores(char *couplingsFile, const numeric_t *x,
     alignment_t *ali, options_t *options);
 
