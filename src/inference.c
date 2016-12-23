@@ -93,17 +93,9 @@ numeric_t *InferPairModel(alignment_t *ali, options_t *options) {
         A single pseudocount is added for stability 
        (Laplace's rule or Morcos et al. with lambda = nCodes) */
     if (options->zeroAPC != 1) {
-        numeric_t pseudoC = (numeric_t) ali->nCodes;
-        numeric_t Zinv = 1.0 / (ali->nEff + pseudoC);
-        for (int i = 0; i < ali->nSites; i++)
-            for (int ai = 0; ai < ali->nSites; ai++)
-                xHi(i, ai) = Zinv * pseudoC / (numeric_t) ali->nCodes;
-        for (int s = 0; s < ali->nSeqs; s++)
-            for (int i = 0; i < ali->nSites; i++)
-                xHi(i, seq(s, i)) += ali->weights[s] * Zinv;
         for (int i = 0; i < ali->nSites; i++)
             for (int ai = 0; ai < ali->nCodes; ai++)
-                xHi(i, ai) = log(xHi(i, ai));
+                xHi(i, ai) = log(fi(i, ai) * ali->nEff + 1.0);
         /* Zero-sum gauge */
         for (int i = 0; i < ali->nSites; i++) {
             numeric_t hSum = 0.0;
