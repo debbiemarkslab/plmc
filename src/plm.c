@@ -615,9 +615,16 @@ void MSACountMarginals(alignment_t *ali, options_t *options) {
             double fsum = 0.0;
             for (int ai = 0; ai < ali->nCodes; ai++)
                 fsum += fi(i, ai);
-            double fsumInv = 1.0 / fsum;
-            for (int ai = 0; ai < ali->nCodes; ai++)
-                fi(i, ai) *= fsumInv;
+            if (fsum != 0) {
+                double fsumInv = 1.0 / fsum;
+                for (int ai = 0; ai < ali->nCodes; ai++)
+                    fi(i, ai) *= fsumInv;
+            } else {
+                /* Handle empty columns */
+                numeric_t flatF = 1.0 / ((numeric_t) ali->nCodes);
+                for (int ai = 0; ai < ali->nCodes; ai++)
+                    fi(i, ai) = flatF;
+            }
         }
         for (int i = 0; i < ali->nSites - 1; i++)
             for (int j = i + 1; j < ali->nSites; j++) {
@@ -625,10 +632,18 @@ void MSACountMarginals(alignment_t *ali, options_t *options) {
                 for (int ai = 0; ai < ali->nCodes; ai++)
                     for (int aj = 0; aj < ali->nCodes; aj++)
                         fsum += fij(i, j, ai, aj);
-                double fsumInv = 1.0 / fsum;
-                for (int ai = 0; ai < ali->nCodes; ai++)
-                    for (int aj = 0; aj < ali->nCodes; aj++)
-                        fij(i, j, ai, aj) *= fsumInv;
+                if (fsum != 0) {
+                    double fsumInv = 1.0 / fsum;
+                    for (int ai = 0; ai < ali->nCodes; ai++)
+                        for (int aj = 0; aj < ali->nCodes; aj++)
+                            fij(i, j, ai, aj) *= fsumInv;
+                } else {
+                    /* Handle pairs of empty columns */
+                    numeric_t flatF = 1.0 / ((numeric_t) (ali->nCodes * ali->nCodes));
+                    for (int ai = 0; ai < ali->nCodes; ai++)
+                        for (int aj = 0; aj < ali->nCodes; aj++)
+                            fij(i, j, ai, aj) = flatF;
+                }
             }
 
     } else {
