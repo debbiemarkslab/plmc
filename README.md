@@ -70,6 +70,10 @@ The numeric options set a strong L2 regularization for the couplings, λ<sub>e</
 This computes and plots the same (APC-corrected) coupling strengths that would be output to couplingfile, revealing many strongly coupled pairs of positions in the long-term evolution of DHFR:
 <p align="center"><img src="example/protein/DHFR.png" width="500"></p>
 
+Lastly, to prune and export these parameters to a lightweight JSON format for [EVzoom](https://github.com/debbiemarkslab/EVzoom), run
+
+      export_couplings_json(read_params('../example/protein/DHFR.params'), '../example/protein/DHFR.json')
+
 **RNA alignments**. 
  An example RNA alignment is included for the [SAM riboswitch](https://en.wikipedia.org/wiki/SAM_riboswitch_(S_box_leader)). To infer the couplings with an RNA alphabet (.ACGU) type the following in the base directory:
 
@@ -97,16 +101,12 @@ and in the biophysics literature by
 
 Ekeberg, M., Lövkvist, C., Lan, Y., Weigt, M., & Aurell, E. (2013). [Improved contact prediction in proteins: using pseudolikelihoods to infer Potts models](http://journals.aps.org/pre/abstract/10.1103/PhysRevE.87.012707). Physical Review E, 87(1), 012707.
 
-`plmc` implements a joint optimization version of inference described in these and subsequent works (i.e. the 'symmetric' pseudolikelihood). If you'd like to use `plmc` in your own work, please cite one of the following papers that uses `plmc`. Also, please let us know if you have any comments or questions!
+`plmc` implements a joint optimization version of inference described in these and subsequent works (i.e. the 'symmetric' pseudolikelihood). If you'd like to use `plmc` in your own work, please cite the following paper. Also, please let us know if you have any comments or questions!
 
 Hopf, T. A., Ingraham, J. B., Poelwijk, F. J., Springer, M., Sander, C., & Marks, D. S. (2015). [Quantification of the effect of mutations using a global probability model of natural sequence variation](http://arxiv.org/abs/1510.04612). arXiv:1510.04612.
-
-Weinreb, C., Riesselman, A. J., Ingraham, J. B., Gross, T., Sander, C., & Marks, D. S. (2016). [3D RNA and Functional Interactions from Evolutionary Couplings](http://www.sciencedirect.com/science/article/pii/S0092867416303282). Cell.
 
 ## Author
 plmc was written by [John Ingraham](mailto:john.ingraham@gmail.com) in [Debora Marks' lab](https://marks.hms.harvard.edu/) at Harvard Medical School
 
 ## Credits
 The MAP-based inference uses a [C implementation of L-BFGS by Naoaki Okazaki](https://github.com/chokkan/liblbfgs "libLBFGS"), which is included in this repo
-
-
