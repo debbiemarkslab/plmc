@@ -70,9 +70,12 @@ The numeric options set a strong L2 regularization for the couplings, λ<sub>e</
 This computes and plots the same (APC-corrected) coupling strengths that would be output to couplingfile, revealing many strongly coupled pairs of positions in the long-term evolution of DHFR:
 <p align="center"><img src="example/protein/DHFR.png" width="500"></p>
 
-Lastly, to prune and export these parameters to a lightweight JSON format for [EVzoom](https://github.com/debbiemarkslab/EVzoom), run
+Each coupling strength is the summary of the coupling parameters, since the model contains separate parameter for every possible combination of amino acids at each pair of positions. To visualize these sequence-level parameters, we can use a JavaScript tool [EVzoom](https://github.com/debbiemarkslab/EVzoom) that is designed to visualize plmc models. For efficiency, we cull the parameters with an EM-based outlier-detection method and export the strongly coupled pairs in a lightweight JSON format with
 
       export_couplings_json(read_params('../example/protein/DHFR.params'), '../example/protein/DHFR.json')
+
+[EVzoom](https://github.com/debbiemarkslab/EVzoom) makes it possible to navigate the large number of sequence-level parameters present in undirected models of sequence families:
+<p align="center"><img src="https://marks.hms.harvard.edu/evzoom/evzoom.gif" width="500"></p>
 
 **RNA alignments**. 
  An example RNA alignment is included for the [SAM riboswitch](https://en.wikipedia.org/wiki/SAM_riboswitch_(S_box_leader)). To infer the couplings with an RNA alphabet (.ACGU) type the following in the base directory:
