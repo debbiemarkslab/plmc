@@ -70,7 +70,7 @@ The numeric options set a strong L2 regularization for the couplings, λ<sub>e</
 This computes and plots the same (APC-corrected) coupling strengths that would be output to couplingfile, revealing many strongly coupled pairs of positions in the long-term evolution of DHFR:
 <p align="center"><img src="example/protein/DHFR.png" width="500"></p>
 
-Each coupling strength is the summary of the coupling parameters, since the model contains separate parameter for every possible combination of amino acids at each pair of positions. To visualize these sequence-level parameters, we can use a JavaScript tool [EVzoom](https://github.com/debbiemarkslab/EVzoom) that is designed to visualize plmc models. For efficiency, we cull the parameters with an EM-based outlier-detection method and export the strongly coupled pairs in a lightweight JSON format with
+Each coupling strength summarizes a larger set of coupling parameters, since the model explicitly parameterizes each possible combination of amino acids at each pair of positions. To visualize these sequence-level parameters, we can use a JavaScript tool [EVzoom](https://github.com/debbiemarkslab/EVzoom) that is designed to visualize plmc models. For efficiency, we export only the strongly coupled pairs (culled by an EM-based outlier-detection method) in a lightweight JSON format with
 
       export_couplings_json(read_params('../example/protein/DHFR.params'), '../example/protein/DHFR.json')
 
