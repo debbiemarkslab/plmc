@@ -102,8 +102,19 @@ end
 fid = fopen(jsonFile,'w');
 fprintf(fid, '{\n');
 
+% Print Map
+fprintf(fid, '\t"map": {\n');
+fprintf(fid, '\t\t"letters": "%s",\n', params.target_seq);
+fprintf(fid, '\t\t"indices": [');
+for i = 1:numel(params.offset_map)
+    fprintf(fid, '%d, ', params.offset_map(i));
+end
+fseek(fid, -2, 'cof');
+fprintf(fid, ']\n');
+fprintf(fid,'\t\t},\n');
+
 % Print Logo
-fprintf(fid, '"logo": [\n');
+fprintf(fid, '\t"logo": [\n');
 B = -params.fi .* log2(params.fi);
 B(params.fi <= 0) = 0;
 R = log2(20) - sum(B,2);
@@ -112,22 +123,22 @@ for i = 1:size(B,1)
     match = find(params.fi(i,:) > 0.01);
     [~, jx] = sort(B(i,match),'ascend');
     match = match(jx);
-    fprintf(fid,'\t[');
+    fprintf(fid,'\t\t[');
     for j = match
-        fprintf(fid,'{"code":"%s", "height": %.2f},', residues(j), B(i,j));
+        fprintf(fid,'{"code":"%s", "bits": %.2f},', residues(j), B(i,j));
     end
     fseek(fid, -1, 'cof');
     fprintf(fid,'],\n');
 end
 fseek(fid, -2, 'cof');
-fprintf(fid,'\n],\n');
+fprintf(fid,'\n\t],\n');
 
 % Print Jij submatrices
-fprintf(fid, '"couplings": [\n');
+fprintf(fid, '\t"couplings": [\n');
 for i = 1:N
     for j = 1:N
         if CN(i,j) > xc
-            fprintf(fid,'\t{"i": %d,"j": %d, "scale": %.2f, ', i, j, CN(i,j));
+            fprintf(fid,'\t\t{"i": %d,"j": %d, "score": %.2f, ', i, j, CN(i,j));
             J = squeeze(params.Jij(i,j,swap,swap));
             ai_set = find(max(abs(J')) > coupling_threshold);
             aj_set = find(max(abs(J)) > coupling_threshold);
@@ -146,7 +157,7 @@ for i = 1:N
     end
 end
 fseek(fid, -2, 'cof');
-fprintf(fid,'\n]\n}');
+fprintf(fid,'\n\t]\n}');
 fclose(fid);
 end
 
