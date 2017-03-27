@@ -124,7 +124,7 @@ void OutputCouplingScores(char *couplingsFile, const numeric_t *x,
 
 
 /* File I/O */
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 40960
 #define fgetstr(str, fp)   {char *endPos;                                   \
                             if (fgets(str, BUFFER_SIZE, fp) != NULL) {      \
                                 if ((endPos = strchr(str, '\n')) != NULL)   \
