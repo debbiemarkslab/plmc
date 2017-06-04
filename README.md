@@ -106,7 +106,7 @@ Ekeberg, M., Lövkvist, C., Lan, Y., Weigt, M., & Aurell, E. (2013). [Improved c
 
 `plmc` implements a joint optimization version of inference described in these and subsequent works (i.e. the 'symmetric' pseudolikelihood). If you'd like to use `plmc` in your own work, please cite the following paper. Also, please let us know if you have any comments or questions!
 
-Hopf, T. A., Ingraham, J. B., Poelwijk, F. J., Springer, M., Sander, C., & Marks, D. S. (2015). [Quantification of the effect of mutations using a global probability model of natural sequence variation](http://arxiv.org/abs/1510.04612). arXiv:1510.04612.
+Hopf, T. A., Ingraham, J. B., Poelwijk, F. J., Schärfe, C. P., Springer, M., Sander, C., & Marks, D. S. (2017). [Mutation effects predicted from sequence co-variation](https://www.nature.com/nbt/journal/v35/n2/abs/nbt.3769.html). Nature biotechnology, 35(2), 128-135.
 
 ## Author
 plmc was written by [John Ingraham](mailto:john.ingraham@gmail.com) in [Debora Marks' lab](https://marks.hms.harvard.edu/) at Harvard Medical School
