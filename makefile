@@ -7,19 +7,19 @@ GCCFLAGS=-std=c99 -lm -O3 -msse4.2
 CLANGFLAGS=-lm -Wall -Ofast -msse4.2
 
 all:
-	gcc $(SOURCES) -o bin/plmc $(GCCFLAGS)
+	$(CC) $(SOURCES) -o bin/plmc $(GCCFLAGS)
 
 all32:
-	gcc $(SOURCES) -o bin/plmc $(GCCFLAGS) -D USE_FLOAT
+	$(CC) $(SOURCES) -o bin/plmc $(GCCFLAGS) -D USE_FLOAT
 
 all-dev:
-	gcc $(SOURCES) -o bin/plmc $(GCCFLAGS) -Wall
+	$(CC) $(SOURCES) -o bin/plmc $(GCCFLAGS) -Wall
 
 all-openmp:
-	gcc $(SOURCES) -o bin/plmc -fopenmp $(GCCFLAGS)
+	$(CC) $(SOURCES) -o bin/plmc -fopenmp $(GCCFLAGS)
 
 all-openmp32:
-	gcc $(SOURCES) -o bin/plmc -fopenmp $(GCCFLAGS) -D USE_FLOAT
+	$(CC) $(SOURCES) -o bin/plmc -fopenmp $(GCCFLAGS) -D USE_FLOAT
 
 all-mac:
 	clang $(SOURCES) -o bin/plmc $(CLANGFLAGS)
