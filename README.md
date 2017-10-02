@@ -6,7 +6,7 @@ plmc infers [undirected graphical models](https://en.wikipedia.org/wiki/Markov_r
       plmc -c couplingsfile alignmentfile
       plmc -o paramfile -c couplingsfile alignmentfile
       plmc [-h | --help]
-      
+
     Required input:
       alignmentfile                    Multiple sequence alignment in FASTA format
 
@@ -24,9 +24,9 @@ plmc infers [undirected graphical models](https://en.wikipedia.org/wiki/Markov_r
       -lg --lambdag    <value>         Set group L1 lambda for couplings (e_ij)
 
     Options, general:
-      -a  --alphabet   alphabet        Alternative alphabet (default 21: -ACDEFGHIKLMNPQRSTVWY)
+      -a  --alphabet   alphabet        Alternative character set to use for analysis
       -f  --focus      identifier      Select only uppercase, non-gapped sites from a focus sequence
-      -g  --gapignore                  Exclude first alphabet character from potential calculations
+      -g  --gapignore                  Model sequence likelihoods only by coding, non-gapped portions
       -m  --maxiter                    Maximum number of iterations
       -n  --ncores    [<number>|max]   Maximum number of threads to use in OpenMP
       -h  --help                       Usage
