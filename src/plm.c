@@ -576,7 +576,8 @@ void MSAReweightSequences(alignment_t *ali, numeric_t theta, numeric_t scale) {
             ali->nEff, 100 * (1 - theta), scale);
     } else {
         fprintf(stderr,
-            "Theta not between 0 and 1, no sequence reweighting applied\n");
+            "Theta not between 0 and 1, no sequence reweighting applied (N = %.2f)\n",
+            ali->nEff);
     }
 }
 
