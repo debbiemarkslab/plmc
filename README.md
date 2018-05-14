@@ -24,6 +24,7 @@ plmc infers [undirected graphical models](https://en.wikipedia.org/wiki/Markov_r
       -lg --lambdag    <value>         Set group L1 lambda for couplings (e_ij)
 
     Options, general:
+          --fast                       Fast weights and stochastic gradient descent
       -a  --alphabet   alphabet        Alternative alphabet (default 21: -ACDEFGHIKLMNPQRSTVWY)
       -f  --focus      identifier      Select only uppercase, non-gapped sites from a focus sequence
       -g  --gapignore                  Exclude first alphabet character from potential calculations
@@ -106,10 +107,10 @@ Ekeberg, M., Lövkvist, C., Lan, Y., Weigt, M., & Aurell, E. (2013). [Improved c
 
 `plmc` implements a joint optimization version of inference described in these and subsequent works (i.e. the 'symmetric' pseudolikelihood). If you'd like to use `plmc` in your own work, please cite the following paper. Also, please let us know if you have any comments or questions!
 
-Hopf, T. A., Ingraham, J. B., Poelwijk, F. J., Schärfe, C. P., Springer, M., Sander, C., & Marks, D. S. (2017). [Mutation effects predicted from sequence co-variation](https://www.nature.com/nbt/journal/v35/n2/abs/nbt.3769.html). Nature biotechnology, 35(2), 128-135.
+Hopf, T. A., Ingraham, J. B., Poelwijk, F. J., Schärfe, C. P., Springer, M., Sander, C., & Marks, D. S. (2017). [Mutation effects predicted from sequence co-variation](https://www.nature.com/nbt/journal/v35/n2/abs/nbt.3769.html). Nature Biotechnology, 35(2), 128-135.
 
 ## Author
 plmc was written by [John Ingraham](mailto:john.ingraham@gmail.com) in [Debora Marks' lab](https://marks.hms.harvard.edu/) at Harvard Medical School
 
 ## Credits
-The MAP-based inference uses a [C implementation of L-BFGS by Naoaki Okazaki](https://github.com/chokkan/liblbfgs "libLBFGS"), which is included in this repo
+This code uses a [C implementation of L-BFGS by Naoaki Okazaki](https://github.com/chokkan/liblbfgs "libLBFGS") and [Nishimura and Matsumoto's Mersenne Twister in C](http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html), which are included in this repo.

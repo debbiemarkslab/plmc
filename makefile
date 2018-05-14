@@ -2,7 +2,7 @@
 CC=gcc
 
 # Options
-SOURCES=src/lib/lbfgs.c src/plm.c src/inference.c
+SOURCES=src/lib/twister.c src/lib/lbfgs.c src/plm.c src/inference.c
 GCCFLAGS=-std=c99 -lm -O3 -msse4.2
 CLANGFLAGS=-lm -Wall -Ofast -msse4.2
 

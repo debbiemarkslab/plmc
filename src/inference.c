@@ -12,10 +12,13 @@
 #endif
 
 #include "include/lbfgs.h"
+#include "include/twister.h"
+
 #include "include/plm.h"
 #include "include/inference.h"
 
-#define PI 3.14159265358979323846
+/* Internal prototypes */
+numeric_t ElapsedTime(struct timeval *start);
 
 /* Numerical bounds for ZeroAPCPriors */
 #define LAMBDA_J_MIN 1E-2
@@ -26,6 +29,13 @@
     MAP estimation of parameters by L-BFGS */
 void EstimatePairModelMAP(numeric_t *x, numeric_t *lambdas, alignment_t *ali,
     options_t *options);
+/* Internal to EstimatePairModelMAP: 
+    Stochastic optimization with SGD */
+typedef numeric_t (*gradfun_t) (void *data, const numeric_t *x, numeric_t *g,
+    const int n);
+void SGDOptimize(gradfun_t grad, void *data, numeric_t *x, const int n,
+    const int maxIter, const numeric_t crit);
+numeric_t SGDWrapperPLM(void *data, const numeric_t *x, numeric_t *g, const int n);
 /* Internal to EstimatePairModelMAP: 
    Objective functions for point parameter estimates (MAP) */
 static lbfgsfloatval_t PLMNegLogPosterior(void *instance,
@@ -54,7 +64,6 @@ void ZeroAPCPriors(alignment_t *ali, options_t *options, numeric_t *lambdas,
     lbfgsfloatval_t *x);
 /* Internal to EstimatePairModelMAP: utility functions to L-BFGS */
 const char *LBFGSErrorString(int ret);
-
 
 numeric_t *InferPairModel(alignment_t *ali, options_t *options) {
     /* Estimate the parameters of a maximum entropy model for a
@@ -142,9 +151,6 @@ void EstimatePairModelMAP(numeric_t *x, numeric_t *lambdas, alignment_t *ali,
     param.epsilon = 1E-3;
     param.max_iterations = options->maxIter; /* 0 is unbounded */
 
-    /* Array of void pointers provides relevant data structures */
-    void *d[3] = {(void *)ali, (void *)options, (void *)lambdas};
-
     /* Estimate parameters by optimization */
     static lbfgs_evaluate_t algo;
     switch(options->estimatorMAP) {
@@ -167,11 +173,38 @@ void EstimatePairModelMAP(numeric_t *x, numeric_t *lambdas, alignment_t *ali,
     if (options->zeroAPC == 1) fprintf(stderr,
             "Estimating coupling hyperparameters le = 1/2 inverse variance\n");
 
-    int ret = 0;
-    lbfgsfloatval_t fx;
-    ret = lbfgs(ali->nParams, x, &fx, algo, ReportProgresslBFGS,
-        (void*)d, &param);
-    fprintf(stderr, "Gradient optimization: %s\n", LBFGSErrorString(ret));
+    /* Problem instance in void array */
+    void *d[3] = {(void *)ali, (void *)options, (void *)lambdas};
+
+    if (options->sgd == 1) {
+        /* Scale hyperparams for minibatch */
+        numeric_t scale = (numeric_t) options->sgdBatchSize / ali->nEff;
+        options->lambdaGroup *= scale;
+        for (int i = 0; i < ali->nSites; i++) lambdaHi(i) *= scale;
+        for (int i = 0; i < ali->nSites - 1; i++)
+            for (int j = i + 1; j < ali->nSites; j++)
+                lambdaEij(i, j) *= scale;
+
+        /* SGD optimization */
+        numeric_t crit = 0.01;
+        void *d[4] = {(void *)ali, (void *)options, (void *)lambdas, (void *) algo};
+        SGDOptimize(SGDWrapperPLM, d, x, ali->nParams, options->maxIter, crit);
+
+        /* Unscale hyperparams for minibatch */
+        numeric_t invScale = ali->nEff / (numeric_t) options->sgdBatchSize;
+        options->lambdaGroup *= invScale;
+        for (int i = 0; i < ali->nSites; i++) lambdaHi(i) *= invScale;
+        for (int i = 0; i < ali->nSites - 1; i++)
+            for (int j = i + 1; j < ali->nSites; j++)
+                lambdaEij(i, j) *= invScale;
+    } else {
+        /* L-BFGS optimization */
+        int ret = 0;
+        lbfgsfloatval_t fx;
+        ret = lbfgs(ali->nParams, x, &fx, algo, ReportProgresslBFGS,
+            (void*)d, &param);
+        fprintf(stderr, "Gradient optimization: %s\n", LBFGSErrorString(ret));
+    }
 
     /* Optionally re-estimate parameters with adjusted hyperparameters */
     if (options->zeroAPC == 1) {
@@ -187,11 +220,163 @@ void EstimatePairModelMAP(numeric_t *x, numeric_t *lambdas, alignment_t *ali,
 
         /* Iterate estimation with new hyperparameter estimates */
         options->zeroAPC = 2;
-        ret = lbfgs(ali->nParams, x, &fx, algo,
+        lbfgsfloatval_t fx2;
+        int ret2 = lbfgs(ali->nParams, x, &fx2, algo,
             ReportProgresslBFGS, (void*)d, &param);
-        fprintf(stderr, "Gradient optimization: %s\n", LBFGSErrorString(ret));
+        fprintf(stderr, "Gradient optimization: %s\n", LBFGSErrorString(ret2));
     }
 }
+
+void SGDOptimize(gradfun_t grad, void *data, numeric_t *x, const int n,
+    const int maxIter, const numeric_t crit) {
+    /* Opitimize an objective function by Stochastic Gradient Descent (Adam)
+       Arguments:
+            grad            gradient of objective
+            data            pointer to data
+            x               estimated parameters (length n)
+            n               number of parameters
+            eps             learning rate
+            maxIter         maximum number of iterations
+            crit            stop when ||grad|| / ||x|| < crit
+    */
+    numeric_t ALPHA0 = 0.01;
+    numeric_t ALPHAT = 0.0001;
+    numeric_t BETA1 = 0.9;
+    numeric_t BETA2 = 0.999;
+    numeric_t EPSILON = 1E-8;
+
+    numeric_t *g = (numeric_t *) malloc(n * sizeof(numeric_t));
+    numeric_t criterion = crit + 1.0;
+
+    /* Begin profiling */
+    struct timeval start;
+    gettimeofday(&start, NULL);
+
+    /* Initialize estimates of first and second moments of the gradient */
+    numeric_t *meanX = (numeric_t *) malloc(n * sizeof(numeric_t));
+    numeric_t *meanG = (numeric_t *) malloc(n * sizeof(numeric_t));
+    numeric_t *squareG = (numeric_t *) malloc(n * sizeof(numeric_t));
+    for (int i = 0; i < n; i++) meanX[i] = 0;
+    for (int i = 0; i < n; i++) meanG[i] = 0;
+    for (int i = 0; i < n; i++) squareG[i] = 0;
+
+    /* Optimization loop */
+    int t = 1;
+    do {
+        /* Estimate the gradient */
+        for (int i = 0; i < n; i++) g[i] = 0;
+        numeric_t f = grad(data, x, g, n);
+
+        /* Update estimates of moments */
+        for (int i = 0; i < n; i++)
+            meanG[i] = BETA1 * meanG[i] + (1.0 - BETA1) * g[i];
+        for (int i = 0; i < n; i++)
+            squareG[i] = BETA2 * squareG[i] + (1.0 - BETA2) * g[i] * g[i];
+
+        /* Update Q with Adam learning rates */
+        // numeric_t schedule = ALPHA;
+        numeric_t frac = (numeric_t) t / (numeric_t) maxIter; 
+        numeric_t schedule = exp((1 - frac) * log(ALPHA0) + frac * log(ALPHAT));
+        numeric_t alpha = schedule
+                          * sqrt(1.0 - pow(BETA2, (numeric_t) t)) 
+                              / (1.0 - pow(BETA1, (numeric_t) t));
+        for (int i = 0; i < n; i++)
+            x[i] -= meanG[i] * alpha / (sqrt(squareG[i]) + EPSILON);
+
+        /* Update Polyak average */
+        for (int i = 0; i < n; i++)
+            meanX[i] = BETA1 * meanX[i] + (1 - BETA1) * x[i];
+
+        /* Stopping criterion: ||grad(params)|| / ||params|| */
+        numeric_t paramNorm = 1E-6;
+        for (int i = 0; i < n; i++) paramNorm += fabs(x[i]) / (numeric_t) n;
+        numeric_t gradNorm = 1E-6;
+        for (int i = 0; i < n; i++)
+            gradNorm += fabs(meanG[i]) / (numeric_t) n;
+        criterion = gradNorm;
+
+        if (t == 1)
+            fprintf(stderr, "iter\ttime\tobj\t|x|\t|g|\tcrit\n");
+            fprintf(stderr, "%d\t%.1f\t%.1f\t%.1f\t%.1f\t%.1f\n",
+            t, ElapsedTime(&start), f, paramNorm, gradNorm, criterion);
+        t++;
+    } while (t <= maxIter && criterion > crit);
+    // for (int i = 0; i < n; i++) x[i] = meanX[i] / ((numeric_t) t - 1);
+    for (int i = 0; i < n; i++) x[i] = meanX[i];
+    free(meanX);
+    free(meanG);
+    free(squareG);
+    free(g);
+}
+
+numeric_t SGDWrapperPLM(void *data, const numeric_t *x, numeric_t *g, 
+    const int n) {
+    /* Wrap objective function for L-BFGS to support
+        minibatched Stochastic Gradient Descent (SGD)
+    */
+    void **d = (void **)data;
+    alignment_t *ali = (alignment_t *) d[0];
+    options_t *options = (options_t *) d[1];
+    numeric_t *lambdas = (numeric_t *) d[2];
+    lbfgs_evaluate_t lbfgsfun = (lbfgs_evaluate_t) d[3];
+
+    /* Shallow copy alignment and options */
+    alignment_t *aliBatch = (alignment_t *) malloc(sizeof(alignment_t));
+    options_t *optionsBatch = (options_t *) malloc(sizeof(options_t));
+    *aliBatch = *ali;
+    *optionsBatch = *options;
+
+    /* Build CDF */
+    numeric_t *CDF = (numeric_t *) malloc(sizeof(numeric_t) * ali->nSeqs);
+    numeric_t weightSum = 0;
+    for (int i = 0; i < ali->nSeqs; i++) weightSum += ali->weights[i];
+    CDF[0] = ali->weights[0] / weightSum;
+    for (int i = 1; i < ali->nSeqs; i++) CDF[i] = CDF[i-1] + ali->weights[i] / weightSum;
+
+    /* Sample a batch of sequences */
+    int batchSize = options->sgdBatchSize;
+    int *indices = (int *) malloc(sizeof(int) * batchSize);
+    numeric_t *u = (numeric_t *) malloc(sizeof(numeric_t) * batchSize);
+    for (int i = 0; i < batchSize; i++) indices[i] = -1;
+    for (int i = 0; i < batchSize; i++) u[i] = (numeric_t) genrand_real3();
+    for (int s = 0; s < ali->nSeqs; s++)
+        for (int i = 0; i < batchSize; i++)
+            if (indices[i] < 0 && u[i] <= CDF[s]) indices[i] = s;
+    for (int i = 0; i < batchSize; i++)
+        if (indices[i] < 0) indices[i] = batchSize - 1;
+
+    /* Clone mini-alignment and weights */
+    aliBatch->sequences =
+        (letter_t *) malloc(sizeof(letter_t) * batchSize * ali->nSites);
+    aliBatch->weights =
+        (numeric_t *) malloc(sizeof(numeric_t) * batchSize);
+    for (int i = 0; i < batchSize; i++)
+        aliBatch->weights[i] = 1.0;
+    for (int i = 0; i < batchSize; i++)
+        for (int j = 0; j < ali->nSites; j++)
+            aliBatch->sequences[j + i * ali->nSites] = seq(indices[i], j);
+    free(u);
+    free(CDF);
+    free(indices);
+    aliBatch->nSeqs = batchSize;
+
+    /* Run the wrapped objective */
+    void *instance[3] = {(void *)aliBatch, (void *)optionsBatch, (void *)lambdas};
+    numeric_t f = lbfgsfun(instance, x, g, n, 0);
+
+    /* Rescale */
+    numeric_t scale = weightSum / (numeric_t) batchSize;
+    f *= scale;
+    for (int i = 0; i < n; i++) g[i] *= scale;
+
+    /* Clean up */
+    free(aliBatch->sequences);
+    free(aliBatch->weights);
+    free(aliBatch);
+    free(optionsBatch);
+    return f;
+}
+
 
 static lbfgsfloatval_t PLMNegLogPosterior(void *instance,
     const lbfgsfloatval_t *x, lbfgsfloatval_t *g, const int n,
@@ -981,4 +1166,22 @@ const char *LBFGSErrorString(int ret) {
             break;
     }
     return p;
+}
+
+numeric_t ElapsedTime(struct timeval *start) {
+/* Computes the elapsed time from START to NOW in seconds */
+    struct timeval now;
+    gettimeofday(&now, NULL);
+    if (now.tv_usec < start->tv_usec) {
+        int nsec = (start->tv_usec - now.tv_usec) / 1000000 + 1;
+        start->tv_usec -= 1000000 * nsec;
+        start->tv_sec += nsec;
+    }
+    if (now.tv_usec - start->tv_usec > 1000000) {
+        int nsec = (now.tv_usec - start->tv_usec) / 1000000;
+        start->tv_usec += 1000000 * nsec;
+        start->tv_sec -= nsec;
+    }
+    return (numeric_t) (now.tv_sec - start->tv_sec)
+                      + ((numeric_t) (now.tv_usec - start->tv_usec)) / 1E6;
 }

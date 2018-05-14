@@ -54,9 +54,16 @@ typedef struct {
     int estimatorMAP;
     int maxIter;
 
-    /* Regularization */
+    /* SGD options */
+    int sgd;
+    int sgdBatchSize;
+
+    /* Sequence weights */
+    int fastWeights;
     numeric_t theta;
     numeric_t scale;
+
+    /* Regularization */
     numeric_t lambdaH;
     numeric_t lambdaE;
     numeric_t lambdaGroup;
@@ -106,7 +113,7 @@ typedef struct {
 alignment_t *MSARead(char *alignFile, options_t *options);
 
 /* Reweights sequences by their inverse neighborhood size */
-void MSAReweightSequences(alignment_t *ali, numeric_t theta, numeric_t scale);
+void MSAReweightSequences(alignment_t *ali, options_t *options);
 
 /* Counts empirical sitewise(fi) and pairwise(fij) marginals of the alignment */
 void MSACountMarginals(alignment_t *ali, options_t *options);
