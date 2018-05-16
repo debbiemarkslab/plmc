@@ -75,7 +75,7 @@ const numeric_t REGULARIZATION_LAMBDA_GROUP = 0.0;
 const numeric_t REWEIGHTING_THETA = 0.20;
 const numeric_t REWEIGHTING_SCALE = 1.0;
 const int ZERO_APC_PRIORS = 0;
-const int SGD_BATCH_SIZE = 256;
+const int SGD_BATCH_SIZE = 2048;
 const int REWEIGHTING_SAMPLES = 5000;
 
 int main(int argc, char **argv) {
@@ -576,13 +576,15 @@ void MSAReweightSequences(alignment_t *ali, options_t *options) {
             free(clusters);
 
             /* EM steps */
-            fprintf(stderr, "Clustering");
             int *assignment = (int *) malloc(nSeqs * sizeof(int));
             int *counts = (int *) malloc(nClusters * nSites * nCodes * sizeof(int));
+            int *radii = (int *) malloc(nClusters * sizeof(int));
             for (int i = 0; i < nSeqs; i++) assignment[i] = 0;
+            fprintf(stderr, "Clustering");
             for (int t = 0; t < nIterations; t++) {
                 fprintf(stderr, ".");
                 /* Step 1. Update the assignments */
+                for (int i = 0; i < nClusters; i++) radii[i] = 0;
                 #pragma omp parallel for
                 for (int s = 0; s < nSeqs; s++) {
                     int ixOld = assignment[s];
@@ -602,12 +604,13 @@ void MSAReweightSequences(alignment_t *ali, options_t *options) {
                         }
                     }
                     if (ixNew != ixOld) assignment[s] = ixNew;
+                    if (radii[ixNew] < distance) radii[ixNew] = distance;
                 }
                 /* --------------------------_DEBUG_--------------------------*/
                 // for (int s = 0; s < nClusters; s++) {
                 //     int size = 0;
                 //     for (int i = 0; i < nSeqs; i++) size += (assignment[i] == s);
-                //     fprintf(stderr, ">Cluster %d, %d members\n", s, size);
+                //     fprintf(stderr, ">Cluster %d, %d members, radius %d\n", s, size, radii[s]);
                 //     for (int i = 0; i < ali->nSites; i++)
                 //         if (CONSENSUS(s,i) >= 0) {
                 //             fprintf(stderr, "%c", ali->alphabet[CONSENSUS(s,i)]);
@@ -620,23 +623,25 @@ void MSAReweightSequences(alignment_t *ali, options_t *options) {
 
                 /* Step 2. Update the consensus sequences */
                 /* Update the counts */
-                for (int i = 0; i < nClusters * nSites * nCodes; i++)
-                    counts[i] = 0;
-                for (int s = 0; s < nSeqs; s++)
-                    for (int j = 0; j < nSites; j++)
-                        COUNTS(assignment[s], j, seq(s, j)) += 1;
-                #pragma omp parallel for
-                for (int i = 0; i < nClusters; i++)
-                    for (int j = 0; j < nSites; j++) {
-                        int topCode = 0;
-                        int topCounts = COUNTS(i, j, 0);
-                        for (int b = 1; b < nCodes; b++)
-                            if (COUNTS(i, j, b) > topCounts) {
-                                topCode = b;
-                                topCounts = COUNTS(i, j, b);
-                            }
-                        CONSENSUS(i ,j) = topCode;
-                    }
+                if (t < nIterations - 1) {
+                    for (int i = 0; i < nClusters * nSites * nCodes; i++)
+                        counts[i] = 0;
+                    for (int s = 0; s < nSeqs; s++)
+                        for (int j = 0; j < nSites; j++)
+                            COUNTS(assignment[s], j, seq(s, j)) += 1;
+                    #pragma omp parallel for
+                    for (int i = 0; i < nClusters; i++)
+                        for (int j = 0; j < nSites; j++) {
+                            int topCode = 0;
+                            int topCounts = COUNTS(i, j, 0);
+                            for (int b = 1; b < nCodes; b++)
+                                if (COUNTS(i, j, b) > topCounts) {
+                                    topCode = b;
+                                    topCounts = COUNTS(i, j, b);
+                                }
+                            CONSENSUS(i ,j) = topCode;
+                        }
+                }
             }
             fprintf(stderr, "\n");
 
@@ -681,10 +686,10 @@ void MSAReweightSequences(alignment_t *ali, options_t *options) {
 
             /* ----------------------------_DEBUG_----------------------------*/
             // for (int s = 0; s < nSeqs; s++) {
-            //     fprintf(stderr, ">Seq %d\n", s);
+            //     fprintf(stdout, ">Seq %d\n", s);
             //     for (int i = 0; i < ali->nSites; i++)
-            //             fprintf(stderr, "%c", ali->alphabet[ALI(s,i)]);
-            //     fprintf(stderr, "\n");
+            //             fprintf(stdout, "%c", ali->alphabet[ALI(s,i)]);
+            //     fprintf(stdout, "\n");
             // }
             /* ----------------------------^DEBUG^----------------------------*/
 
@@ -715,6 +720,7 @@ void MSAReweightSequences(alignment_t *ali, options_t *options) {
             free(clusterEnd);
             free(permuteMap);
             free(weightsP);
+            free(radii);
             free(aliPermute);
         } else {
             /* Deterministic sequence weights */

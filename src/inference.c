@@ -239,10 +239,10 @@ void SGDOptimize(gradfun_t grad, void *data, numeric_t *x, const int n,
             maxIter         maximum number of iterations
             crit            stop when ||grad|| / ||x|| < crit
     */
-    numeric_t ALPHA0 = 0.01;
-    numeric_t ALPHAT = 0.0001;
+    // numeric_t ALPHA0 = 0.001;
+    // numeric_t ALPHAT = 0.00001;
     numeric_t BETA1 = 0.9;
-    numeric_t BETA2 = 0.999;
+    numeric_t BETA2 = 0.99;
     numeric_t EPSILON = 1E-8;
 
     numeric_t *g = (numeric_t *) malloc(n * sizeof(numeric_t));
@@ -275,8 +275,12 @@ void SGDOptimize(gradfun_t grad, void *data, numeric_t *x, const int n,
 
         /* Update Q with Adam learning rates */
         // numeric_t schedule = ALPHA;
-        numeric_t frac = (numeric_t) t / (numeric_t) maxIter; 
-        numeric_t schedule = exp((1 - frac) * log(ALPHA0) + frac * log(ALPHAT));
+        // numeric_t frac = (numeric_t) t / (numeric_t) maxIter;
+        // frac = floor(frac * 5) / 5.;
+        // numeric_t schedule = exp((1 - frac) * log(ALPHA0) + frac * log(ALPHAT));
+        // Anneal strategy #2
+        numeric_t schedule = 0.01 * pow(0.5, (t / 50));
+        // numeric_t schedule = 0.01;
         numeric_t alpha = schedule
                           * sqrt(1.0 - pow(BETA2, (numeric_t) t)) 
                               / (1.0 - pow(BETA1, (numeric_t) t));
