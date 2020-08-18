@@ -373,7 +373,6 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
     for (int i = 0; i < ali->nSites; i++) siteValid[i] = 1;
     if (ali->target >= 0) {
         for (int i = 0; i < ali->nSites; i++) {
-
             /* Discard gaps */
             if (seq(ali->target, i) <= 0) siteValid[i] = 0;
         }
@@ -522,7 +521,7 @@ letter_t MSAReadCode(char c, char *alphabet, int nCodes) {
     letter_t i = 0;
 
     /* Protein-specific treatment of '.' */
-    if (c == '.') c = '-'; // Assumes . are gpas in alphabet
+    if (c == '.') c = '-'; // Assumes '.' are gaps in alphabet
 
     /* Store lowercase characters as down-shifted by nCodes */
     while ((i < nCodes - 1) && toupper(c) != alphabet[i]) i++;
