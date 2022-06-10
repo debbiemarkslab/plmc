@@ -82,6 +82,7 @@ int main(int argc, char **argv) {
     char *alignFile = NULL;
     char *outputFile = NULL;
     char *couplingsFile = NULL;
+    char *weightsFile = NULL;
 
     /* Default options */
     options_t *options = (options_t *) malloc(sizeof(options_t));
@@ -161,6 +162,8 @@ int main(int argc, char **argv) {
         } else if ((arg < argc-1) && strcmp(argv[arg], "--fast") == 0) {
             options->sgd = 1;
             options->fastWeights = 100;
+        } else if ((arg < argc-1) && strcmp(argv[arg], "--weights_file") == 0) {
+            weightsFile = argv[++arg];
         } else if ((arg < argc-1) && (strcmp(argv[arg], "--ncores") == 0
                     || strcmp(argv[arg], "-n") == 0)) {
             #if defined(_OPENMP)
@@ -205,8 +208,13 @@ int main(int argc, char **argv) {
     /* Read multiple seqence alignment */
     alignment_t *ali = MSARead(alignFile, options);
 
-    /* Reweight sequences by inverse neighborhood density */
-    MSAReweightSequences(ali, options);
+    if (weightsFile != NULL) {
+        fprintf(stderr, "Reading custom weights from %s\n", weightsFile);
+        ReadCustomWeightsFile(ali, options, weightsFile);
+    } else {
+        /* Reweight sequences by inverse neighborhood density */
+        MSAReweightSequences(ali, options);
+    }
 
     /* Compute sitwise and pairwise marginal distributions */
     MSACountMarginals(ali, options);
@@ -766,13 +774,46 @@ void MSAReweightSequences(alignment_t *ali, options_t *options) {
 
     if (options->theta >= 0 && options->theta <= 1) {
         fprintf(stderr, 
-            "Effective number of samples: %.1f\t(%.0f%% identical neighborhood = %.3f samples)\n",
+            "Effective number of samples (to 1 decimal place): %.1f\t(%.0f%% identical neighborhood = %.3f samples)\n",
             ali->nEff, 100 * (1 - options->theta), options->scale);
     } else {
         fprintf(stderr,
             "Theta not between 0 and 1, no sequence reweighting applied (N = %.2f)\n",
             ali->nEff);
     }
+}
+
+void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
+    /* Note: Not using options->scale (or options->theta) for now (assuming this is done in original weights calc).*/
+    /* Most of this is copied from MSAReweightSequences() */
+
+    /* Load weights (float array) into ali->weights and set ali->nEff */
+    FILE *fp = fopen(weightsFile, "r");
+    if (fp == NULL) {
+        fprintf(stderr, "Error: could not open weights file %s\n", weightsFile);
+        exit(1);
+    }
+    /* Reinitialize array just in case */
+    for (int i = 0; i < ali->nSeqs; i++) ali->weights[i] = 1.0;
+
+    /* Read weights */
+    for (int i = 0; i < ali->nSeqs; i++) {
+        float w;
+        if (fscanf(fp, "%f", &w) != 1) {
+            fprintf(stderr, "Error reading weights file %s at position %d\n", weightsFile, i);
+            exit(1);
+        }
+        ali->weights[i] = w;
+    }
+    fclose(fp);
+
+    /* The effective number of sequences is then the sum of the weights */
+    ali->nEff = 0;
+    for (int i = 0; i < ali->nSeqs; i++) ali->nEff += ali->weights[i];
+
+    fprintf(stderr,
+            "Weights loaded successfully. Effective number of samples (to 1 decimal place): %.1f.\n",
+            ali->nEff);
 }
 
 void MSACountMarginals(alignment_t *ali, options_t *options) {
