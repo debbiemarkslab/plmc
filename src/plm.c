@@ -796,7 +796,7 @@ void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFi
     /* Reinitialize array just in case */
     for (int i = 0; i < ali->nSeqs; i++) ali->weights[i] = 1.0;
 
-    /* Read weights */
+    /* Read weights, one float per line */
     for (int i = 0; i < ali->nSeqs; i++) {
         float w;
         if (fscanf(fp, "%f", &w) != 1) {
