@@ -783,16 +783,49 @@ void MSAReweightSequences(alignment_t *ali, options_t *options) {
     }
 }
 
+int ValidateCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
+    /* Check that the weights file exists */
+    /* Remember to close file pointer before returning. */
+    FILE *fp = fopen(weightsFile, "r");
+    if (fp == NULL) {
+        fprintf(stderr, "Error: weights file %s does not exist\n", weightsFile);
+        fclose(fp);
+        return 1;
+    }
+
+    /* Count number of lines in file */
+    int nLines = 0;
+    int MAX_LINE_LENGTH = 1024;
+    char line[MAX_LINE_LENGTH];
+    while (fgets(line, MAX_LINE_LENGTH, fp) != NULL) nLines++;
+
+    if (nLines != ali->nSeqs) {
+        fprintf(stderr, "Error: weights file %s has %d lines, but alignment has %d sequences\n",
+            weightsFile, nLines, ali->nSeqs);
+        fclose(fp);
+        return 1;
+    }
+
+    fclose(fp);
+    return 0;
+}
+
 void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
     /* Note: Not using options->scale (or options->theta) for now (assuming this is done in original weights calc).*/
     /* Most of this is copied from MSAReweightSequences() */
 
-    /* Load weights (float array) into ali->weights and set ali->nEff */
-    FILE *fp = fopen(weightsFile, "r");
-    if (fp == NULL) {
-        fprintf(stderr, "Error: could not open weights file %s\n", weightsFile);
+    int isValid = ValidateCustomWeightsFile(ali, options, weightsFile);
+    if (!isValid) {
+        fprintf(stderr, "Error: weights file %s is invalid\n", weightsFile);
         exit(1);
     }
+
+    /* Load weights (float array) into ali->weights and set ali->nEff */
+    FILE *fp = fopen(weightsFile, "r");
+//    if (fp == NULL) {
+//        fprintf(stderr, "Error: could not open weights file %s\n", weightsFile);
+//        exit(1);
+//    }
     /* Reinitialize array just in case */
     for (int i = 0; i < ali->nSeqs; i++) ali->weights[i] = 1.0;
 
