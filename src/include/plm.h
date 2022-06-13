@@ -112,14 +112,6 @@ typedef struct {
  */
 alignment_t *MSARead(char *alignFile, options_t *options);
 
-/* Reweights sequences by their inverse neighborhood size */
-void MSAReweightSequences(alignment_t *ali, options_t *options);
-
-/* Reads custom weights from a file
-   The file should contain a list of floats, one per sequence, separated by lines.
- */
-void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weights_file);
-
 /* Counts empirical sitewise(fi) and pairwise(fij) marginals of the alignment */
 void MSACountMarginals(alignment_t *ali, options_t *options);
 
