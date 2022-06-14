@@ -17,4 +17,6 @@ void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weights_f
 
 int ValidateCustomWeightsFile(alignment_t *ali, options_t *options, char *weights_file);
 
+void writeCustomWeightsFile(alignment_t *ali, options_t *options, char *weights_file);
+
 #endif //PLMC_WEIGHTS_H

@@ -216,6 +216,7 @@ int main(int argc, char **argv) {
     } else {
         /* Reweight sequences by inverse neighborhood density */
         MSAReweightSequences(ali, options);
+//        writeCustomWeightsFile(ali, options, "weights.txt");
     }
 
     /* Compute sitewise and pairwise marginal distributions */
@@ -371,7 +372,7 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
         if (seqValid[s] == ali->nSites) nValidSeqs++;
     fprintf(stderr, "%d valid sequences out of %d \n", nValidSeqs, ali->nSeqs);
     
-    /* Recored indices of skipped sequences */
+    /* Record indices of skipped sequences */
     ali->nSkippedSeqs = ali->nSeqs - nValidSeqs;
     ali->skippedSeqs = (int *) malloc(ali->nSkippedSeqs * sizeof(int));
     for (int s = 0, skipIndex = 0; s < ali->nSeqs; s++)

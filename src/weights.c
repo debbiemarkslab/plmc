@@ -263,9 +263,10 @@ int ValidateCustomWeightsFile(alignment_t *ali, options_t *options, char *weight
     char line[MAX_LINE_LENGTH];
     while (fgets(line, MAX_LINE_LENGTH, fp) != NULL) nLines++;
 
-    if (nLines != ali->nSeqs) {
+    int nSeqsRaw = ali->nSeqs + ali->nSkippedSeqs;
+    if (nLines != nSeqsRaw) {
         fprintf(stderr, "Error: weights file %s has %d lines, but alignment has %d sequences\n",
-                weightsFile, nLines, ali->nSeqs);
+                weightsFile, nLines, nSeqsRaw);
         fclose(fp);
         return 1;
     }
@@ -294,13 +295,23 @@ void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFi
     for (int i = 0; i < ali->nSeqs; i++) ali->weights[i] = 1.0;
 
     /* Read weights, one float per line */
-    for (int i = 0; i < ali->nSeqs; i++) {
+    // Copied from plm.OutputParametersFull()
+    int skippedIdx = 0, reducedIdx = 0;
+    int nSeqsTotal = ali->nSeqs + ali->nSkippedSeqs;
+    for (int i = 0; i < nSeqsTotal; i++) {
         float w;
         if (fscanf(fp, "%f", &w) != 1) {
             fprintf(stderr, "Error reading weights file %s at position %d\n", weightsFile, i);
             exit(1);
         }
-        ali->weights[i] = w;
+        // Skip invalid sequence weights
+        if ((skippedIdx < ali->nSkippedSeqs) && (i == ali->skippedSeqs[skippedIdx])) {
+            skippedIdx++;
+            continue;
+        } else {
+            ali->weights[reducedIdx] = w;
+            reducedIdx++;
+        }
     }
     fclose(fp);
 
@@ -311,4 +322,35 @@ void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFi
     fprintf(stderr,
             "Weights loaded successfully. Effective number of samples (to 1 decimal place): %.1f.\n",
             ali->nEff);
+}
+
+void writeCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
+    // Note: Ignoring options->scale and options->theta here, writing out raw weights
+    /* Write weights to file */
+    FILE *fpOutput = fopen(weightsFile, "w");
+    if (fpOutput == NULL) {
+        fprintf(stderr, "Error: could not open weights file %s\n", weightsFile);
+        exit(1);
+    }
+    fprintf(stderr, "nSeqs: %d, nSkippedSeqs: %d\n", ali->nSeqs, ali->nSkippedSeqs);
+    // Write out weights, one float per line, and include invalid seqs as weight 0
+    // Copied from plm.OutputParametersFull()
+    int skipix = 0, reducedix = 0;
+    for (int i = 0; i < (ali->nSeqs + ali->nSkippedSeqs); i++) {
+        if (skipix < ali->nSkippedSeqs && i == ali->skippedSeqs[skipix]) {
+            /* Skip skipped sequences */
+            numeric_t w = (numeric_t) 0.0;
+            fprintf(stderr, "Skipping seq %d: %d\n", skipix, ali->skippedSeqs[skipix]);
+            fprintf(fpOutput, "%f\n", w);
+            skipix++;
+        } else {
+            numeric_t w = ali->weights[reducedix];
+            fprintf(fpOutput, "%f\n", w);
+            reducedix++;
+        }
+        if (i > 3620) {
+            fprintf(stderr, "Reached i=%d\n", i);
+        }
+    }
+    fclose(fpOutput);
 }

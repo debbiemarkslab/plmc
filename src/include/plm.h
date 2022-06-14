@@ -101,7 +101,7 @@ typedef struct {
     /* Inference */
     int nParams;
     numeric_t negLogLk;
-    struct timeval start;
+    struct timeval start;  // sys/time.h
 } alignment_t;
 
 /* Loads a multiple sequence alignment and encodes it into a specified alphabet.
