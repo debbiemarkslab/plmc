@@ -79,7 +79,7 @@ const int ZERO_APC_PRIORS = 0;
 const int SGD_BATCH_SIZE = 2048;
 const int REWEIGHTING_SAMPLES = 5000;
 
-int main(int argc, char **argv) {
+void run_plmc(int argc, char **argv) {
     char *alignFile = NULL;
     char *outputFile = NULL;
     char *couplingsFile = NULL;

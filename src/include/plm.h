@@ -104,6 +104,11 @@ typedef struct {
     struct timeval start;  // sys/time.h
 } alignment_t;
 
+/* Command-line entrypoint.
+ * Could move this whole thing out to main.c instead, but keeping here for minimal changes.
+ */
+void run_plmc(int argc, char **argv);
+
 /* Loads a multiple sequence alignment and encodes it into a specified alphabet.
    Any sequences containing characters outside of the alphabet are discarded.
    By default, these routines are case-insenstive but columns containing
