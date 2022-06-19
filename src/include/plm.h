@@ -72,6 +72,8 @@ typedef struct {
     int zeroAPC;
 } options_t;
 
+options_t *default_options();
+
 /**
  * Multiple sequence alignment
  */
@@ -107,7 +109,8 @@ typedef struct {
 /* Command-line entrypoint.
  * Could move this whole thing out to main.c instead, but keeping here for minimal changes.
  */
-void run_plmc(int argc, char **argv);
+void run_plmc(char *alignFile, char* outputFile, char *couplingsFile,
+    char *weightsFile, options_t *options);
 
 /* Loads a multiple sequence alignment and encodes it into a specified alphabet.
    Any sequences containing characters outside of the alphabet are discarded.
