@@ -43,6 +43,7 @@ const char *usage =
 "      -m  --maxiter                    Maximum number of iterations\n"
 "      -n  --ncores    [<number>|max]   Maximum number of threads to use in OpenMP\n"
 "      -w  --weights   weightsfile      Load sequence weights from file\n"
+"      --save-weights  weightsfile      Save weights to file\n"
 "      -h  --help                       Usage\n\n";
 
 int main(int argc, char **argv) {
@@ -50,6 +51,7 @@ int main(int argc, char **argv) {
     char *outputFile = NULL;
     char *couplingsFile = NULL;
     char *weightsFile = NULL;
+    char *weightsOutputFile = NULL;
     options_t *options = default_options();
 
     /* Print usage if no arguments */
@@ -104,9 +106,11 @@ int main(int argc, char **argv) {
         } else if ((arg < argc-1) && strcmp(argv[arg], "--fast") == 0) {
             options->sgd = 1;
             options->fastWeights = 100;
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--weights_file") == 0
+        } else if ((arg < argc-1) && (strcmp(argv[arg], "--weights") == 0
                     || strcmp(argv[arg], "-w") == 0)) {
             weightsFile = argv[++arg];
+        } else if ((arg < argc-1) && (strcmp(argv[arg], "--save-weights") == 0)) {
+            weightsOutputFile = argv[++arg];
         } else if ((arg < argc-1) && (strcmp(argv[arg], "--ncores") == 0
                     || strcmp(argv[arg], "-n") == 0)) {
             #if defined(_OPENMP)
@@ -148,5 +152,5 @@ int main(int argc, char **argv) {
     }
     alignFile = argv[argc - 1];
 
-    run_plmc(alignFile, outputFile, couplingsFile, weightsFile, options);
+    run_plmc(alignFile, outputFile, couplingsFile, weightsFile, weightsOutputFile, options);
 }

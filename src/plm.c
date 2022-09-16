@@ -64,7 +64,7 @@ options_t* default_options() {
 }
 
 void run_plmc(char *alignFile, char* outputFile, char *couplingsFile,
-    char *weightsFile, options_t *options) {
+    char *weightsFile, char *weightsOutputFile, options_t *options) {
 
     /* Initialize PRNG */
     init_genrand(42);
@@ -78,7 +78,9 @@ void run_plmc(char *alignFile, char* outputFile, char *couplingsFile,
     } else {
         /* Reweight sequences by inverse neighborhood density */
         MSAReweightSequences(ali, options);
-//        writeCustomWeightsFile(ali, options, "weights.txt");
+        if (weightsOutputFile != NULL) {
+            WriteWeightsFile(ali, options, weightsOutputFile);
+        }
     }
 
     /* Compute sitewise and pairwise marginal distributions */

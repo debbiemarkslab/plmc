@@ -1,7 +1,3 @@
-//
-// Created by Lood van Niekerk on 2022/06/13.
-//
-
 #ifndef PLMC_WEIGHTS_H
 #define PLMC_WEIGHTS_H
 
@@ -17,6 +13,6 @@ void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weights_f
 
 int ValidateCustomWeightsFile(alignment_t *ali, options_t *options, char *weights_file);
 
-void writeCustomWeightsFile(alignment_t *ali, options_t *options, char *weights_file);
+void WriteWeightsFile(alignment_t *ali, options_t *options, char *weights_file);
 
 #endif //PLMC_WEIGHTS_H

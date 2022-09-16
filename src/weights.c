@@ -1,7 +1,3 @@
-//
-// Created by Lood van Niekerk on 2022/06/13.
-//
-
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -324,7 +320,7 @@ void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFi
             ali->nEff);
 }
 
-void writeCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
+void WriteWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
     // Note: Ignoring options->scale and options->theta here, writing out raw weights
     /* Write weights to file */
     FILE *fpOutput = fopen(weightsFile, "w");
@@ -347,9 +343,6 @@ void writeCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsF
             numeric_t w = ali->weights[reducedix];
             fprintf(fpOutput, "%f\n", w);
             reducedix++;
-        }
-        if (i > 3620) {
-            fprintf(stderr, "Reached i=%d\n", i);
         }
     }
     fclose(fpOutput);

@@ -110,7 +110,7 @@ typedef struct {
  * Could move this whole thing out to main.c instead, but keeping here for minimal changes.
  */
 void run_plmc(char *alignFile, char* outputFile, char *couplingsFile,
-    char *weightsFile, options_t *options);
+    char *weightsFile, char *weightsOutputFile, options_t *options);
 
 /* Loads a multiple sequence alignment and encodes it into a specified alphabet.
    Any sequences containing characters outside of the alphabet are discarded.
