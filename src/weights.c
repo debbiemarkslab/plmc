@@ -243,7 +243,7 @@ void MSAReweightSequences(alignment_t *ali, options_t *options) {
     }
 }
 
-int ValidateCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
+int ValidateCustomWeightsFile(char *weightsFile, alignment_t *ali) {
     /* Check that the weights file exists */
     /* Remember to close file pointer before returning. */
     FILE *fp = fopen(weightsFile, "r");
@@ -271,11 +271,11 @@ int ValidateCustomWeightsFile(alignment_t *ali, options_t *options, char *weight
     return 0;
 }
 
-void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
+void ReadCustomWeightsFile(char *weightsFile, alignment_t *ali) {
     /* Note: Not using options->scale (or options->theta) for now (assuming this is done in original weights calc).*/
     /* Most of this is copied from MSAReweightSequences() */
 
-    int validCode = ValidateCustomWeightsFile(ali, options, weightsFile);
+    int validCode = ValidateCustomWeightsFile(weightsFile, ali);
     if (validCode != 0) {
         fprintf(stderr, "Error: weights file %s is invalid\n", weightsFile);
         exit(1);
@@ -283,16 +283,15 @@ void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFi
 
     /* Load weights (float array) into ali->weights and set ali->nEff */
     FILE *fp = fopen(weightsFile, "r");
-//    if (fp == NULL) {
-//        fprintf(stderr, "Error: could not open weights file %s\n", weightsFile);
-//        exit(1);
-//    }
+    if (fp == NULL) {
+        fprintf(stderr, "Error: could not open weights file %s\n", weightsFile);
+        exit(1);
+    }
     /* Reinitialize array just in case */
     for (int i = 0; i < ali->nSeqs; i++) ali->weights[i] = 1.0;
 
     /* Read weights, one float per line */
-    // Copied from plm.OutputParametersFull()
-    int skippedIdx = 0, reducedIdx = 0;
+    int skippedIdx = 0, reducedIdx = 0, nWarnings = 0, maxWarnings = 64;
     int nSeqsTotal = ali->nSeqs + ali->nSkippedSeqs;
     for (int i = 0; i < nSeqsTotal; i++) {
         float w;
@@ -302,6 +301,10 @@ void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFi
         }
         // Skip invalid sequence weights
         if ((skippedIdx < ali->nSkippedSeqs) && (i == ali->skippedSeqs[skippedIdx])) {
+            if (w > 0 && nWarnings < maxWarnings) {
+                fprintf(stderr, "Warning: Skipped nonzero weight in file %s at position %d\n", weightsFile, i);
+                nWarnings++;
+            }
             skippedIdx++;
             continue;
         } else {
@@ -320,7 +323,7 @@ void ReadCustomWeightsFile(alignment_t *ali, options_t *options, char *weightsFi
             ali->nEff);
 }
 
-void WriteWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
+void WriteWeightsFile(char *weightsFile, alignment_t *ali) {
     // Note: Ignoring options->scale and options->theta here, writing out raw weights
     /* Write weights to file */
     FILE *fpOutput = fopen(weightsFile, "w");
@@ -328,7 +331,6 @@ void WriteWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
         fprintf(stderr, "Error: could not open weights file %s\n", weightsFile);
         exit(1);
     }
-    fprintf(stderr, "nSeqs: %d, nSkippedSeqs: %d\n", ali->nSeqs, ali->nSkippedSeqs);
     // Write out weights, one float per line, and include invalid seqs as weight 0
     // Copied from plm.OutputParametersFull()
     int skipix = 0, reducedix = 0;
@@ -336,7 +338,6 @@ void WriteWeightsFile(alignment_t *ali, options_t *options, char *weightsFile) {
         if (skipix < ali->nSkippedSeqs && i == ali->skippedSeqs[skipix]) {
             /* Skip skipped sequences */
             numeric_t w = (numeric_t) 0.0;
-            fprintf(stderr, "Skipping seq %d: %d\n", skipix, ali->skippedSeqs[skipix]);
             fprintf(fpOutput, "%f\n", w);
             skipix++;
         } else {

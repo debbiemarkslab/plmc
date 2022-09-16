@@ -73,13 +73,12 @@ void run_plmc(char *alignFile, char* outputFile, char *couplingsFile,
     alignment_t *ali = MSARead(alignFile, options);
 
     if (weightsFile != NULL) {
-        fprintf(stderr, "Reading custom weights from %s\n", weightsFile);
-        ReadCustomWeightsFile(ali, options, weightsFile);
+        ReadCustomWeightsFile(weightsFile, ali);
     } else {
         /* Reweight sequences by inverse neighborhood density */
         MSAReweightSequences(ali, options);
         if (weightsOutputFile != NULL) {
-            WriteWeightsFile(ali, options, weightsOutputFile);
+            WriteWeightsFile(weightsOutputFile, ali);
         }
     }
 
