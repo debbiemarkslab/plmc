@@ -27,9 +27,10 @@ all-mac:
 all-mac32:
 	clang $(SOURCES) -o bin/plmc $(CLANGFLAGS) -D USE_FLOAT
 
+# If using homebrew for openMP (libomp)
+all-mac-openmp: BREW_PREFIX=$(shell brew --prefix)
 all-mac-openmp:
-	# If using homebrew for openMP
-	$(CC) $(SOURCES) -o bin/plmc -Xpreprocessor -fopenmp $(GCCFLAGS) -lomp -L/opt/homebrew/lib/ -I/opt/homebrew/include/
+	$(CC) $(SOURCES) -o bin/plmc -Xpreprocessor -fopenmp $(GCCFLAGS) -lomp -L$(BREW_PREFIX)/lib/ -I$(BREW_PREFIX)/include/
 
 clean:
 	rm -rf bin/*
