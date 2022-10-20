@@ -10,9 +10,13 @@ plmc infers [undirected graphical models](https://en.wikipedia.org/wiki/Markov_r
     Required input:
       alignmentfile                    Multiple sequence alignment in FASTA format
 
+    Options, input:
+      -w  --weights    weightsfile     Load sequence weights from file (one weight per line)
+
     Options, output:
       -c  --couplings  couplingsfile   Save coupling scores to file (text)
       -o  --output     paramfile       Save estimated parameters to file (binary)
+      --save-weights   weightsfile     Save sequence weights to file (text)
 
     Options, alignment processing:
       -s  --scale      <value>         Sequence weights: neighborhood weight [s > 0]
@@ -58,6 +62,8 @@ On macOS, OpenMP requires that an external version of GCC be installed rather th
 **Coupling scores**. The `couplingsfile` is a flat text file containing scores quantifying the inferred strength of the coupling between every pair of positions. It has 6 columns: `RES_I FOCUS_AI RES_J FOCUS_AJ 0 SCORE`, where `SCORE` is the coupling score between positions `RES_I` and `RES_J`, `FOCUS_AI` and `FOCUS_AJ` are the letters in the focus sequence (optional, `-` if no focus), `0` is a placeholder. The `SCORE` values are APC-corrected Frobenius norm scores, but alternative scores can be computed from the raw parameter values.
 
 **Parameter estimates**. The optional `paramfile` specified with `-o`, will store all inferred model parameters in binary. These can get large, as for proteins the model explicitly parameterizes all possible pairs of amino acids at all possible pairs of postions, which is about 10<sup>6</sup>-10<sup>8</sup> numbers for families of lengths ~70-700.  The MATLAB script `scripts/read_params.m` unpacks this binary file into model parameters as well as associated metadata, such as inferred sequence weights.
+
+**Sequence weights**. The optional `weightsfile` specified with `--save-weights` (and loaded with `-w`) is a flat text file containing one floating-point weight per line. Each sequence's weight is the inverse of the number of neighboring sequences with less than θ percent divergence.
 
 ## Examples
 **Protein alignments**. The example directory includes an alignment of the protein [dihdyrofolate reductase](https://en.wikipedia.org/wiki/Dihydrofolate_reductase) (DHFR). To infer a model for this family, we can type the following in the base directory:

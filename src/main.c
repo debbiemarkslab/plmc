@@ -22,9 +22,13 @@ const char *usage =
 "    Required input:\n"
 "      alignmentfile                    Multiple sequence alignment in FASTA format\n"
 "\n"
+"    Options, input:\n"
+"      -w  --weights    weightsfile     Load sequence weights from file (one weight per line)\n"
+"\n"
 "    Options, output:\n"
 "      -c  --couplings  couplingsfile   Save coupling scores to file (text)\n"
 "      -o  --output     paramfile       Save estimated parameters to file (binary)\n"
+"      --save-weights   weightsfile     Save sequence weights to file (text)\n"
 "\n"
 "    Options, alignment processing:\n"
 "      -s  --scale      <value>         Sequence weights: neighborhood weight [s > 0]\n"
@@ -42,8 +46,6 @@ const char *usage =
 "      -g  --gapignore                  Model sequence likelihoods only by coding, non-gapped portions\n"
 "      -m  --maxiter                    Maximum number of iterations\n"
 "      -n  --ncores    [<number>|max]   Maximum number of threads to use in OpenMP\n"
-"      -w  --weights   weightsfile      Load sequence weights from file\n"
-"      --save-weights  weightsfile      Save weights to file\n"
 "      -h  --help                       Usage\n\n";
 
 int main(int argc, char **argv) {
