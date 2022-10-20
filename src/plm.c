@@ -77,9 +77,9 @@ void run_plmc(char *alignFile, char* outputFile, char *couplingsFile,
     } else {
         /* Reweight sequences by inverse neighborhood density */
         MSAReweightSequences(ali, options);
-        if (weightsOutputFile != NULL) {
-            WriteWeightsFile(weightsOutputFile, ali);
-        }
+    }
+    if (weightsOutputFile != NULL) {
+        WriteWeightsFile(weightsOutputFile, ali);
     }
 
     /* Compute sitewise and pairwise marginal distributions */

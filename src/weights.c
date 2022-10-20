@@ -6,6 +6,12 @@
 #include "include/weights.h"
 #include "include/twister.h"
 
+#ifdef USE_FLOAT
+char* weights_fmt = "%0.8e\n";
+#else
+char* weights_fmt = "%0.16e\n";
+#endif
+
 void MSAReweightSequences(alignment_t *ali, options_t *options) {
     /* Reweight seqeuences by their inverse neighborhood size. Each sequence's
        weight is the inverse of the number of neighboring sequences with less
@@ -294,8 +300,8 @@ void ReadCustomWeightsFile(char *weightsFile, alignment_t *ali) {
     int skippedIdx = 0, reducedIdx = 0, nWarnings = 0, maxWarnings = 64;
     int nSeqsTotal = ali->nSeqs + ali->nSkippedSeqs;
     for (int i = 0; i < nSeqsTotal; i++) {
-        float w;
-        if (fscanf(fp, "%f", &w) != 1) {
+        long double w;
+        if (fscanf(fp, "%Lf", &w) != 1) {
             fprintf(stderr, "Error reading weights file %s at position %d\n", weightsFile, i);
             exit(1);
         }
@@ -308,7 +314,7 @@ void ReadCustomWeightsFile(char *weightsFile, alignment_t *ali) {
             skippedIdx++;
             continue;
         } else {
-            ali->weights[reducedIdx] = w;
+            ali->weights[reducedIdx] = (numeric_t)w;
             reducedIdx++;
         }
     }
@@ -337,12 +343,11 @@ void WriteWeightsFile(char *weightsFile, alignment_t *ali) {
     for (int i = 0; i < (ali->nSeqs + ali->nSkippedSeqs); i++) {
         if (skipix < ali->nSkippedSeqs && i == ali->skippedSeqs[skipix]) {
             /* Skip skipped sequences */
-            numeric_t w = (numeric_t) 0.0;
-            fprintf(fpOutput, "%f\n", w);
+            fprintf(fpOutput, "0.0\n");
             skipix++;
         } else {
             numeric_t w = ali->weights[reducedix];
-            fprintf(fpOutput, "%f\n", w);
+            fprintf(fpOutput, weights_fmt, w);
             reducedix++;
         }
     }
