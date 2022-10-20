@@ -2,7 +2,7 @@
 CC=gcc
 
 # Options
-SOURCES=src/lib/twister.c src/lib/lbfgs.c src/plm.c src/inference.c
+SOURCES=src/lib/twister.c src/lib/lbfgs.c src/plm.c src/inference.c src/weights.c src/main.c
 GCCFLAGS=-std=c99 -lm -O3 -msse4.2
 CLANGFLAGS=-lm -Wall -Ofast -msse4.2
 
@@ -26,6 +26,11 @@ all-mac:
 
 all-mac32:
 	clang $(SOURCES) -o bin/plmc $(CLANGFLAGS) -D USE_FLOAT
+
+# If using homebrew for openMP (libomp)
+all-mac-openmp: BREW_PREFIX=$(shell brew --prefix)
+all-mac-openmp:
+	$(CC) $(SOURCES) -o bin/plmc -Xpreprocessor -fopenmp $(GCCFLAGS) -lomp -L$(BREW_PREFIX)/lib/ -I$(BREW_PREFIX)/include/
 
 clean:
 	rm -rf bin/*

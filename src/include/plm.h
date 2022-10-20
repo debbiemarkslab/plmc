@@ -72,6 +72,8 @@ typedef struct {
     int zeroAPC;
 } options_t;
 
+options_t *default_options();
+
 /**
  * Multiple sequence alignment
  */
@@ -101,8 +103,14 @@ typedef struct {
     /* Inference */
     int nParams;
     numeric_t negLogLk;
-    struct timeval start;
+    struct timeval start;  // sys/time.h
 } alignment_t;
+
+/* Command-line entrypoint.
+ * Could move this whole thing out to main.c instead, but keeping here for minimal changes.
+ */
+void run_plmc(char *alignFile, char* outputFile, char *couplingsFile,
+    char *weightsFile, char *weightsOutputFile, options_t *options);
 
 /* Loads a multiple sequence alignment and encodes it into a specified alphabet.
    Any sequences containing characters outside of the alphabet are discarded.
@@ -111,9 +119,6 @@ typedef struct {
    If a protein alphabet is used, '.' characters will be treated as '-'. 
  */
 alignment_t *MSARead(char *alignFile, options_t *options);
-
-/* Reweights sequences by their inverse neighborhood size */
-void MSAReweightSequences(alignment_t *ali, options_t *options);
 
 /* Counts empirical sitewise(fi) and pairwise(fij) marginals of the alignment */
 void MSACountMarginals(alignment_t *ali, options_t *options);

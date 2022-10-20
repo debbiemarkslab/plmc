@@ -9,54 +9,12 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
-#include <sys/time.h>
-#include <assert.h>
 #include <string.h>
 
-/* Optionally include OpenMP with the -fopenmp flag */
-#if defined(_OPENMP)
-    #include <omp.h>
-#endif
-
 #include "include/twister.h"
-
 #include "include/plm.h"
 #include "include/inference.h"
-
-/* Usage pattern */
-const char *usage =
-"plmc\n"
-"\n"
-"Usage:\n"
-"      plm [options] alignmentfile\n"
-"      plm -c couplingsfile alignmentfile\n"
-"      plm -o paramfile -c couplingsfile alignmentfile\n"
-"      plm [-h | --help]\n"
-"      \n"
-"    Required input:\n"
-"      alignmentfile                    Multiple sequence alignment in FASTA format\n"
-"\n"
-"    Options, output:\n"
-"      -c  --couplings  couplingsfile   Save coupling scores to file (text)\n"
-"      -o  --output     paramfile       Save estimated parameters to file (binary)\n"
-"\n"
-"    Options, alignment processing:\n"
-"      -s  --scale      <value>         Sequence weights: neighborhood weight [s > 0]\n"
-"      -t  --theta      <value>         Sequence weights: neighborhood divergence [0 < t < 1]\n"
-"\n"
-"    Options, Maximum a posteriori estimation (L-BFGS, default):\n"
-"      -lh --lambdah    <value>         Set L2 lambda for fields (h_i)\n"
-"      -le --lambdae    <value>         Set L2 lambda for couplings (e_ij)\n"
-"      -lg --lambdag    <value>         Set group L1 lambda for couplings (e_ij)\n"
-"\n"
-"    Options, general:\n"
-"          --fast                       Fast weights and stochastic gradient descent\n"
-"      -a  --alphabet   alphabet        Alternative character set to use for analysis\n"
-"      -f  --focus      identifier      Select only uppercase, non-gapped sites from a focus sequence\n"
-"      -g  --gapignore                  Model sequence likelihoods only by coding, non-gapped portions\n"
-"      -m  --maxiter                    Maximum number of iterations\n"
-"      -n  --ncores    [<number>|max]   Maximum number of threads to use in OpenMP\n"
-"      -h  --help                       Usage\n\n";
+#include "include/weights.h"
 
 /* Internal functions to MSARead */
 void MSAReadSeq(char *seq, FILE *fpAli);
@@ -78,14 +36,10 @@ const int ZERO_APC_PRIORS = 0;
 const int SGD_BATCH_SIZE = 2048;
 const int REWEIGHTING_SAMPLES = 5000;
 
-int main(int argc, char **argv) {
-    char *alignFile = NULL;
-    char *outputFile = NULL;
-    char *couplingsFile = NULL;
-
+options_t* default_options() {
     /* Default options */
     options_t *options = (options_t *) malloc(sizeof(options_t));
-    
+
     options->lambdaH = REGULARIZATION_LAMBDA_H;
     options->lambdaE = REGULARIZATION_LAMBDA_E;
     options->lambdaGroup = REGULARIZATION_LAMBDA_GROUP;
@@ -106,109 +60,29 @@ int main(int argc, char **argv) {
     options->sgd = 0;
     options->sgdBatchSize = SGD_BATCH_SIZE;
 
+    return options;
+}
+
+void run_plmc(char *alignFile, char* outputFile, char *couplingsFile,
+    char *weightsFile, char *weightsOutputFile, options_t *options) {
+
     /* Initialize PRNG */
     init_genrand(42);
 
-    /* Print usage if no arguments */
-    if (argc == 1) {
-        fprintf(stderr, "%s", usage);
-        exit(1);
-    }
-
-    /* Parse command line arguments */
-    for (int arg = 1; arg < argc; arg++) {
-        if ((arg < argc-1) && (strcmp(argv[arg], "--output") == 0
-                    || strcmp(argv[arg], "-o") == 0)) {
-            outputFile = argv[++arg];
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--alphabet") == 0
-                    || strcmp(argv[arg], "-a") == 0)) {
-            options->alphabet = argv[++arg];
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--couplings") == 0
-                    || strcmp(argv[arg], "-c") == 0)) {
-            couplingsFile = argv[++arg];
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--lambdah") == 0
-                    || strcmp(argv[arg], "-lh") == 0)) {
-            options->lambdaH = atof(argv[++arg]);
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--lambdae") == 0
-                    || strcmp(argv[arg], "-le") == 0)) {
-            options->lambdaE = atof(argv[++arg]);
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--lambdag") == 0
-                    || strcmp(argv[arg], "-lg") == 0)) {
-            options->lambdaGroup = atof(argv[++arg]);
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--theta") == 0
-                    || strcmp(argv[arg], "-t") == 0)) {
-            options->theta = atof(argv[++arg]);
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--scale") == 0
-                    || strcmp(argv[arg], "-s") == 0)) {
-            options->scale = atof(argv[++arg]);
-        } else if ((arg < argc-1)  && (strcmp(argv[arg], "--maxiter") == 0
-                    || strcmp(argv[arg], "-m") == 0)) {
-            options->maxIter = atoi(argv[++arg]);
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--independent") == 0
-                    || strcmp(argv[arg], "-i") == 0)) {
-            options->usePairs = 0;
-            fprintf(stderr, "Independent model not yet implemented\n");
-            exit(0);
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--gapreduce") == 0
-                    || strcmp(argv[arg], "-g") == 0)) {
-            options->estimatorMAP = INFER_MAP_PLM_GAPREDUCE;
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--estimatele") == 0
-                    || strcmp(argv[arg], "-ee") == 0)) {
-            options->zeroAPC = 1;
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--focus") == 0
-                    || strcmp(argv[arg], "-f") == 0)) {
-            options->target = argv[++arg];
-        } else if ((arg < argc-1) && strcmp(argv[arg], "--fast") == 0) {
-            options->sgd = 1;
-            options->fastWeights = 100;
-        } else if ((arg < argc-1) && (strcmp(argv[arg], "--ncores") == 0
-                    || strcmp(argv[arg], "-n") == 0)) {
-            #if defined(_OPENMP)
-                if (strcmp(argv[arg + 1], "max") == 0) {
-                    int maxThreads = omp_get_max_threads();
-                    /* Redundant, but serves as sanity check */
-                    omp_set_num_threads(maxThreads);
-                    fprintf(stderr, "OpenMP: Using %d of %d threads\n",
-                        maxThreads, maxThreads);
-                } else {
-                    int numThreads = atoi(argv[arg + 1]);
-                    int maxThreads = omp_get_max_threads();
-                    if (numThreads >= 1 && numThreads <= maxThreads) {
-                        omp_set_num_threads(numThreads);
-                        fprintf(stderr, "OpenMP: Using %d of %d threads\n",
-                            numThreads, maxThreads);
-                    } else if (numThreads > maxThreads) {
-                        omp_set_num_threads(maxThreads);
-                        fprintf(stderr, "OpenMP: More threads requested than "
-                            "available. Using %d of %d threads instead.\n",
-                            maxThreads, maxThreads);
-                    } else {
-                        omp_set_num_threads(1);
-                        fprintf(stderr, "OpenMP: Using 1 of %d threads\n",
-                            maxThreads);
-                    }
-                }
-                arg++;
-            #else
-                fprintf(stderr, "Error (-n/--ncores) only available when "
-                    "compiled with OpenMP\n");
-                exit(1);
-            #endif
-        } else if (strcmp(argv[arg], "--help") == 0
-                    || strcmp(argv[arg], "-h") == 0) {
-            fprintf(stderr, "%s", usage);
-            exit(1);
-        }
-    }
-    alignFile = argv[argc - 1];
-
-    /* Read multiple seqence alignment */
+    /* Read multiple sequence alignment */
     alignment_t *ali = MSARead(alignFile, options);
 
-    /* Reweight sequences by inverse neighborhood density */
-    MSAReweightSequences(ali, options);
+    if (weightsFile != NULL) {
+        ReadCustomWeightsFile(weightsFile, ali);
+    } else {
+        /* Reweight sequences by inverse neighborhood density */
+        MSAReweightSequences(ali, options);
+    }
+    if (weightsOutputFile != NULL) {
+        WriteWeightsFile(weightsOutputFile, ali);
+    }
 
-    /* Compute sitwise and pairwise marginal distributions */
+    /* Compute sitewise and pairwise marginal distributions */
     MSACountMarginals(ali, options);
 
     /* Infer model parameters */
@@ -361,7 +235,7 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
         if (seqValid[s] == ali->nSites) nValidSeqs++;
     fprintf(stderr, "%d valid sequences out of %d \n", nValidSeqs, ali->nSeqs);
     
-    /* Recored indices of skipped sequences */
+    /* Record indices of skipped sequences */
     ali->nSkippedSeqs = ali->nSeqs - nValidSeqs;
     ali->skippedSeqs = (int *) malloc(ali->nSkippedSeqs * sizeof(int));
     for (int s = 0, skipIndex = 0; s < ali->nSeqs; s++)
@@ -536,243 +410,6 @@ letter_t MSAReadCode(char c, char *alphabet, int nCodes) {
     /* Encode out-of-alphabet characters by [nCodes] */
     if (i > 0 && toupper(c) != alphabet[i]) i = nCodes;
     return i;
-}
-
-void MSAReweightSequences(alignment_t *ali, options_t *options) {
-    /* Reweight seqeuences by their inverse neighborhood size. Each sequence's
-       weight is the inverse of the number of neighboring sequences with less
-       than THETA percent divergence
-    */
-    for (int i = 0; i < ali->nSeqs; i++) ali->weights[i] = 1.0;
-
-    /* Only apply reweighting if theta is on [0,1] */
-    if (options->theta >= 0 && options->theta <= 1) {
-        /* The neighborhood size of each sequence is the number of sequences 
-           in the alignment within theta percent divergence */
-
-        if (options->fastWeights > 0 && options->fastWeights < ali->nSeqs) {
-            /* Cluster the sequences with k-consensus */
-            int nClusters = options->fastWeights;
-            int nIterations = 10;
-            int nSeqs = ali->nSeqs;
-            int nCodes = ali->nCodes;
-            int nSites = ali->nSites;
-
-            #define COUNTS(i,j,a) counts[i * nSites * nCodes + j * nCodes + a]
-            #define CONSENSUS(i,j) consensus[i * nSites + j]
-            #define ALI(i,j) aliPermute[i * nSites + j]
-
-            /* Pick initial clusters with Reservoir sampling */
-            int *clusters = (int *) malloc(nClusters * sizeof(int));
-            letter_t *consensus = (letter_t *) malloc(nClusters * nSites * sizeof(letter_t));
-            for (int i = 0; i < nClusters; i++) clusters[i] = i;
-            for (int i = nClusters; i < nSeqs; i++) {
-                int ix = genrand_int32() % (i);
-                if (ix < nClusters) clusters[ix] = i;
-            }
-            for (int i = 0; i < nClusters; i++)
-                for (int j = 0; j < nSites; j++)
-                    CONSENSUS(i,j) = seq(clusters[i], j);
-            free(clusters);
-
-            /* EM steps */
-            int *assignment = (int *) malloc(nSeqs * sizeof(int));
-            int *counts = (int *) malloc(nClusters * nSites * nCodes * sizeof(int));
-            int *radii = (int *) malloc(nClusters * sizeof(int));
-            for (int i = 0; i < nSeqs; i++) assignment[i] = 0;
-            fprintf(stderr, "Clustering");
-            for (int t = 0; t < nIterations; t++) {
-                fprintf(stderr, ".");
-                /* Step 1. Update the assignments */
-                for (int i = 0; i < nClusters; i++) radii[i] = 0;
-                #pragma omp parallel for
-                for (int s = 0; s < nSeqs; s++) {
-                    int ixOld = assignment[s];
-                    /* Current distance to current assignment */
-                    numeric_t distance = 0;
-                    for (int j = 0; j < nSites; j++)
-                        distance += (CONSENSUS(ixOld, j) != seq(s, j));
-                    /* Find closest */
-                    int ixNew = ixOld;
-                    for (int i = 0; i < nClusters; i++) {
-                        numeric_t distanceI = 0;
-                        for (int j = 0; j < nSites; j++)
-                            distanceI += (CONSENSUS(i, j) != seq(s, j));
-                        if (distanceI < distance) {
-                            ixNew = i;
-                            distance = distanceI;
-                        }
-                    }
-                    if (ixNew != ixOld) assignment[s] = ixNew;
-                    if (radii[ixNew] < distance) radii[ixNew] = distance;
-                }
-                /* --------------------------_DEBUG_--------------------------*/
-                // for (int s = 0; s < nClusters; s++) {
-                //     int size = 0;
-                //     for (int i = 0; i < nSeqs; i++) size += (assignment[i] == s);
-                //     fprintf(stderr, ">Cluster %d, %d members, radius %d\n", s, size, radii[s]);
-                //     for (int i = 0; i < ali->nSites; i++)
-                //         if (CONSENSUS(s,i) >= 0) {
-                //             fprintf(stderr, "%c", ali->alphabet[CONSENSUS(s,i)]);
-                //         } else {
-                //             fprintf(stderr, " ");
-                //         }
-                //     fprintf(stderr, "\n");
-                // }
-                /* --------------------------^DEBUG^--------------------------*/
-
-                /* Step 2. Update the consensus sequences */
-                /* Update the counts */
-                if (t < nIterations - 1) {
-                    for (int i = 0; i < nClusters * nSites * nCodes; i++)
-                        counts[i] = 0;
-                    for (int s = 0; s < nSeqs; s++)
-                        for (int j = 0; j < nSites; j++)
-                            COUNTS(assignment[s], j, seq(s, j)) += 1;
-                    #pragma omp parallel for
-                    for (int i = 0; i < nClusters; i++)
-                        for (int j = 0; j < nSites; j++) {
-                            int topCode = 0;
-                            int topCounts = COUNTS(i, j, 0);
-                            for (int b = 1; b < nCodes; b++)
-                                if (COUNTS(i, j, b) > topCounts) {
-                                    topCode = b;
-                                    topCounts = COUNTS(i, j, b);
-                                }
-                            CONSENSUS(i ,j) = topCode;
-                        }
-                }
-            }
-            fprintf(stderr, "\n");
-
-            /* Profile-profile distances */
-            numeric_t *clusterID = (numeric_t *) malloc(nClusters * nClusters * sizeof(numeric_t));
-            for (int i = 0; i < nClusters * nClusters; i++) clusterID[i] = 0;
-            #pragma omp parallel for
-            for (int pi = 0; pi < nClusters; pi++)
-                for (int pj = 0; pj < nClusters; pj++)
-                    for (int j = 0; j < nSites; j++)
-                        clusterID[pi + pj * nClusters] += 
-                            (CONSENSUS(pi,j) == CONSENSUS(pj,j));
-
-            free(consensus);
-            free(counts);
-
-            /* Permute alignment */
-            int *clusterSizes = (int *) malloc(nClusters * sizeof(int));
-            int *clusterStart = (int *) malloc(nClusters * sizeof(int));
-            int *clusterEnd = (int *) malloc(nClusters * sizeof(int));
-            int *permuteMap = (int *) malloc(nSeqs * sizeof(int));
-            numeric_t *weightsP = (numeric_t *) malloc(nSeqs * sizeof(numeric_t));
-            letter_t *aliPermute = (letter_t *) malloc(nSeqs * nSites * sizeof(letter_t));
-            for (int i = 0; i < nClusters; i++) clusterSizes[i] = 0;
-            for (int s = 0; s < ali->nSeqs; s++)
-                clusterSizes[assignment[s]] += 1;
-            int ix = 0;
-            for (int i = 0; i < nClusters; i++) {
-                clusterStart[i] = ix;
-                ix += clusterSizes[i];
-                clusterEnd[i] = ix;
-            }
-            ix = 0;
-            for (int i = 0; i < nClusters; i++)
-                for (int s = 0; s < ali->nSeqs; s++)
-                    if (assignment[s] == i) {
-                        for (int j = 0; j < nSites; j++)
-                            ALI(ix,j) = seq(s,j);
-                        permuteMap[ix] = s;
-                        ix++;
-                    }
-
-            /* ----------------------------_DEBUG_----------------------------*/
-            // for (int s = 0; s < nSeqs; s++) {
-            //     fprintf(stdout, ">Seq %d\n", s);
-            //     for (int i = 0; i < ali->nSites; i++)
-            //             fprintf(stdout, "%c", ali->alphabet[ALI(s,i)]);
-            //     fprintf(stdout, "\n");
-            // }
-            /* ----------------------------^DEBUG^----------------------------*/
-
-            /* Sequence weights */
-            numeric_t cutoff = (numeric_t) ((1 - options->theta) * ali->nSites);
-            for (int s = 0; s < nSeqs; s++) weightsP[s] = 1;
-            #pragma omp parallel for
-            for (int ci = 0; ci < nClusters; ci++)
-                for (int cj = 0; cj < nClusters; cj++)
-                    if (clusterID[ci * nClusters + cj] >= 0.9 * cutoff)
-                        for (int s = clusterStart[ci]; s < clusterEnd[ci]; s++)
-                            for (int t = clusterStart[cj]; t < clusterEnd[cj]; t++)
-                                if (s != t) {
-                                    int id = 0;
-                                    for (int n = 0; n < ali->nSites; n++)
-                                        id += (ALI(s, n) == ALI(t, n));
-                                    if (id >= cutoff) weightsP[s] += 1.0;
-                                }
-            for (int s = 0; s < nSeqs; s++)
-                ali->weights[permuteMap[s]] = weightsP[s];
-
-            #undef COUNTS
-            #undef CONSENSUS
-            #undef ALI
-
-            free(clusterSizes);
-            free(clusterStart);
-            free(clusterEnd);
-            free(permuteMap);
-            free(weightsP);
-            free(radii);
-            free(aliPermute);
-        } else {
-            /* Deterministic sequence weights */
-            #if defined(_OPENMP)
-            /* Naive parallelization is faster ignoring symmetry */
-            #pragma omp parallel for
-            for (int s = 0; s < ali->nSeqs; s++)
-                for (int t = 0; t < ali->nSeqs; t++)
-                    if (s != t) {
-                        int id = 0;
-                        for (int n = 0; n < ali->nSites; n++)
-                            id += (seq(s, n) == seq(t, n));
-                        if (id >= ((1 - options->theta) * ali->nSites))
-                            ali->weights[s] += 1.0;
-                    }
-            #else
-            /* For a single core, take advantage of symmetry */
-            for (int s = 0; s < ali->nSeqs - 1; s++)
-                for (int t = s + 1; t < ali->nSeqs; t++) {
-                    int id = 0;
-                    for (int n = 0; n < ali->nSites; n++)
-                        id += (seq(s, n) == seq(t, n));
-                    if (id >= ((1 - options->theta) * ali->nSites)) {
-                        ali->weights[s] += 1.0;
-                        ali->weights[t] += 1.0;
-                    }
-                }
-            #endif
-        }
-
-        /* Reweight sequences by the inverse of the neighborhood size */
-        for (int i = 0; i < ali->nSeqs; i++)
-            ali->weights[i] = 1.0 / ali->weights[i];
-    }
-
-    /* Scale sets the effective number of samples per neighborhood */
-    for (int i = 0; i < ali->nSeqs; i++)
-            ali->weights[i] *= options->scale;
-
-    /* The effective number of sequences is then the sum of the weights */
-    ali->nEff = 0;
-    for (int i = 0; i < ali->nSeqs; i++) ali->nEff += ali->weights[i];
-
-    if (options->theta >= 0 && options->theta <= 1) {
-        fprintf(stderr, 
-            "Effective number of samples: %.1f\t(%.0f%% identical neighborhood = %.3f samples)\n",
-            ali->nEff, 100 * (1 - options->theta), options->scale);
-    } else {
-        fprintf(stderr,
-            "Theta not between 0 and 1, no sequence reweighting applied (N = %.2f)\n",
-            ali->nEff);
-    }
 }
 
 void MSACountMarginals(alignment_t *ali, options_t *options) {
