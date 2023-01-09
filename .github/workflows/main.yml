@@ -1,0 +1,60 @@
+---
+name: CI
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  # don't trigger on push
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  tests:
+    name: "run_tests ${{ matrix.job.target }} (${{ matrix.job.os }})"
+    runs-on: "${{ matrix.job.os }}"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          - { target: x86_64-apple-darwin         , os: macos-latest                   }
+          - { target: x86_64-unknown-linux-gnu    , os: ubuntu-latest, use-cross: true }
+
+    steps:
+      - name: Checkout source code
+        uses: "actions/checkout@v3"
+        with:
+          submodules: 'recursive'
+
+      - name: Install prerequisites
+        run: |
+          case ${{ matrix.job.target }} in
+            *-unknown-linux-*) sudo apt-get -y update ; sudo apt-get -y install libomp-dev ;;
+            *-apple-darwin) brew update --preinstall ; env HOMEBREW_NO_AUTO_UPDATE=1 brew install gcc libomp; brew link libomp --force ;;
+          esac
+
+      - name: Compile default
+        run: |
+          case ${{ matrix.job.target }} in
+            *-unknown-linux-*) make all ;;
+            *-apple-darwin) make all-mac ;;
+          esac
+
+      - name: Compile multicore
+        run: |
+          case ${{ matrix.job.target }} in
+            *-unknown-linux-*) make all-openmp ;;
+            *-apple-darwin) make all-mac-openmp ;;
+          esac
+
+      # - name: Run tests (skip as this takes too long)
+      #   run: |
+      #     pwd
+      #     cd tests
+      #     bash protein.sh
