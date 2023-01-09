@@ -240,7 +240,7 @@ void MSAReweightSequences(alignment_t *ali, options_t *options) {
 
     if (options->theta >= 0 && options->theta <= 1) {
         fprintf(stderr,
-                "Effective number of samples (to 1 decimal place): %.1f\t(%.0f%% identical neighborhood = %.3f samples)\n",
+                "Effective number of samples: %.1f\t(%.0f%% identical neighborhood = %.3f samples)\n",
                 ali->nEff, 100 * (1 - options->theta), options->scale);
     } else {
         fprintf(stderr,
