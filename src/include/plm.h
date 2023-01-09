@@ -2,6 +2,7 @@
 #define PLM_H
 
 #include "lbfgs.h"
+#include <sys/time.h>
 
 #ifdef USE_FLOAT
 typedef float numeric_t;
