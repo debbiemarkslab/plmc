@@ -33,10 +33,13 @@ jobs:
           submodules: 'recursive'
 
       - name: Install prerequisites
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
+          HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: 1
         run: |
           case ${{ matrix.job.target }} in
             *-unknown-linux-*) sudo apt-get -y update ; sudo apt-get -y install libomp-dev ;;
-            *-apple-darwin) brew update --preinstall ; env HOMEBREW_NO_AUTO_UPDATE=1 brew install gcc libomp; brew link libomp --force ;;
+            *-apple-darwin) brew install gcc libomp; ;;
           esac
 
       - name: Compile default
