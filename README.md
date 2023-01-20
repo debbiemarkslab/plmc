@@ -43,13 +43,16 @@ plmc requires no external libraries, but can optionally be accelerated with Open
 
     make all-openmp
 
-On macOS, OpenMP requires that an external version of GCC be installed rather than `clang`. Precompiled binaries of GCC are available [here](http://hpc.sourceforge.net/) or can be downloaded through package managers like homebrew or macports.
+**Multicore, macOS**. To install OpenMP through homebrew and compile with `clang`:
+
+    brew install libomp
+    make all-mac-openmp
 
 **Single core, Linux**. To compile with `gcc`: 
 
     make all
 
-**Single core, Mac OS X**. To compile with `clang`:
+**Single core, macOS**. To compile with `clang`:
 
     make all-mac
 

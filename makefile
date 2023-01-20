@@ -30,7 +30,7 @@ all-mac32:
 # If using homebrew for openMP (libomp)
 all-mac-openmp: LIBOMP_PREFIX=$(shell brew --prefix libomp)
 all-mac-openmp:
-	$(CC) $(SOURCES) -o bin/plmc -Xpreprocessor -fopenmp $(GCCFLAGS) -lomp -L$(LIBOMP_PREFIX)/lib/ -I$(LIBOMP_PREFIX)/include/
+	clang $(SOURCES) -o bin/plmc -Xpreprocessor -fopenmp $(CLANGFLAGS) -lomp -L$(LIBOMP_PREFIX)/lib/ -I$(LIBOMP_PREFIX)/include/
 
 clean:
 	rm -rf bin/*
