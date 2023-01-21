@@ -1,14 +1,14 @@
 ---
-name: CI
+name: end-to-end run
 
 # Controls when the action will run.
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
-  # don't trigger on push
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  # # Triggers the workflow on push or pull request events but only for the master branch
+  # # don't trigger on push
+  # push:
+  #   branches: [ master ]
+  # pull_request:
+  #   branches: [ master ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -16,7 +16,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   tests:
-    name: "compile ${{ matrix.job.target }} (${{ matrix.job.os }})"
+    name: "test ${{ matrix.job.target }} (${{ matrix.job.os }})"
     runs-on: "${{ matrix.job.os }}"
 
     strategy:
@@ -56,8 +56,8 @@ jobs:
             *-apple-darwin) make all-mac-openmp ;;
           esac
 
-      # - name: Run tests (skip as this takes too long)
-      #   run: |
-      #     pwd
-      #     cd tests
-      #     bash protein.sh
+      - name: Run end-to-end test
+        run: |
+          pwd
+          cd tests
+          bash protein.sh
