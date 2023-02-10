@@ -247,14 +247,8 @@ alignment_t *MSARead(char *alignFile, options_t *options) {
     for (int i = 0; i < ali->nSites; i++) siteValid[i] = 1;
     if (ali->target >= 0) {
         for (int i = 0; i < ali->nSites; i++) {
-            /* For proteins, remove lower case and gap columns */
-            if ((ali->alphabet == codesAA) 
-                && (seq(ali->target, i) < 0))
-                siteValid[i] = 0;
             /* Discard gaps */
-            if ((ali->alphabet == codesAA)
-                || (options->estimatorMAP == INFER_MAP_PLM_GAPREDUCE))
-                if (seq(ali->target, i) == 0) siteValid[i] = 0;
+            if (seq(ali->target, i) <= 0) siteValid[i] = 0;
         }
         nValidSites = 0;
         for (int i = 0; i < ali->nSites; i++)
@@ -401,7 +395,7 @@ letter_t MSAReadCode(char c, char *alphabet, int nCodes) {
     letter_t i = 0;
 
     /* Protein-specific treatment of '.' */
-    if (alphabet == codesAA) if (c == '.') c = '-';
+    if (c == '.') c = '-'; // Assumes '.' are gaps in alphabet
 
     /* Store lowercase characters as down-shifted by nCodes */
     while ((i < nCodes - 1) && toupper(c) != alphabet[i]) i++;
